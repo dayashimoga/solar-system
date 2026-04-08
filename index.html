@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solar System Simulator — Planets & Moons | QuickUtils</title>
+    <meta name="description" content="Interactive solar system map with planets, dwarf planets, and localized moon orbital systems.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪐</text></svg>">
+    <link rel="stylesheet" href="quickutils-core.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav class="navbar"><div class="container nav-inner">
+        <a href="https://quickutils.top" class="brand">🪐 Solar System</a>
+        <div class="nav-links">
+            <button class="btn btn-sm btn-secondary" id="resetViewBtn">Reset View</button>
+            <a href="https://ko-fi.com/dayatin" target="_blank" class="kofi-link">☕ Support</a>
+            <button id="themeBtn" class="theme-btn">🌙</button>
+        </div>
+    </div></nav>
+    <main class="app-container">
+        <div class="canvas-container">
+            <canvas id="spaceCanvas"></canvas>
+            <div id="uiOverlay" class="ui-overlay pointer-none">
+                <div id="infoPanel" class="info-panel glass-card pointer-auto" style="display:none">
+                    <button id="closeInfo" class="icon-btn right-btn">✕</button>
+                    <h2 id="sysTitle">Target</h2>
+                    <div class="info-stats" id="sysStats"></div>
+                    <p id="sysDesc" class="text-muted mt-2 text-sm"></p>
+                    <button id="zoomInBtn" class="btn btn-primary btn-sm mt-3 w-100" style="display:none">View Moons System</button>
+                </div>
+            </div>
+            <div class="controls-overlay glass-card">
+                <label>Speed <input type="range" id="speedSlider" min="0" max="100" value="20"></label>
+                <div class="text-sm text-center text-muted mt-2">Scroll to Zoom • Drag to Pan</div>
+            </div>
+        </div>
+    </main>
+    <script src="quickutils-core.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
