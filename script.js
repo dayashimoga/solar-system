@@ -3,7 +3,7 @@
 const $=s=>document.querySelector(s);
 const canvas=$('#spaceCanvas'), ctx=canvas.getContext('2d');
 let w,h, centerX, centerY;
-let time=0, speed=1, scale=1;
+let time=0, speed=(20/50)**3, scale=1;
 let camX=0, camY=0, isDragging=false, startX, startY;
 let targetObj = null;
 
@@ -170,7 +170,8 @@ function showInfo(obj) {
 }
 
 function drawGrid(){
-    ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    ctx.strokeStyle = isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.03)';
     ctx.lineWidth = 1/scale;
     const step = 50;
     const startX = -camX/scale;
@@ -188,7 +189,8 @@ function drawOrbit(obj) {
         ctx.beginPath();
         const pd = obj.type === 'Moon' ? obj.dist * DIST_MULT * 0.5 : obj.dist * DIST_MULT;
         ctx.arc(obj.parent.absX, obj.parent.absY, pd, 0, Math.PI*2);
-        ctx.strokeStyle = obj.type === 'Moon' ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.15)';
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        ctx.strokeStyle = obj.type === 'Moon' ? (isLight ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)') : (isLight ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.15)');
         ctx.lineWidth = 1/scale;
         ctx.stroke();
     }
@@ -221,7 +223,8 @@ function drawBody(obj) {
 
     // Draw label
     if((scale > 0.4 || obj.type === 'Planet' || obj.type === 'Star' || obj.type === 'Dwarf Planet') && (obj.type!=='Moon' || scale > 2.5)) {
-        ctx.fillStyle = obj === targetObj ? '#fff' : 'rgba(255,255,255,0.7)';
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        ctx.fillStyle = obj === targetObj ? (isLight ? '#000' : '#fff') : (isLight ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.7)');
         ctx.font = `${Math.max(10/scale, 3)}px var(--font-sans)`;
         ctx.textAlign = 'center';
         ctx.fillText(obj.name, obj.absX, obj.absY - obj.radius - (4/scale));
@@ -245,7 +248,10 @@ function animate(t) {
         camY += (ty - camY) * 0.1;
     }
 
-    ctx.clearRect(0,0, canvas.width, canvas.height);
+    
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    ctx.fillStyle = isLight ? '#f8fafc' : '#050510';
+    ctx.fillRect(0,0, canvas.width, canvas.height);
     ctx.save();
     ctx.translate(camX, camY);
     ctx.scale(scale, scale);
