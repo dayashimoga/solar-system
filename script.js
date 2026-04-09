@@ -8,16 +8,36 @@ let camX=0, camY=0, isDragging=false, startX, startY;
 let targetObj = null;
 const DIST_MULT = 60;
 
-// Generate starfield
+// Generate massive deep-space starfield
+// Expanded radius for unlimited zoom out, increased count to 4000
 const STARS = [];
-for(let i=0;i<600;i++) STARS.push({x:(Math.random()-0.5)*8000,y:(Math.random()-0.5)*8000,r:Math.random()*1.5+0.3,b:Math.random()*0.5+0.5,tw:Math.random()*Math.PI*2});
+const STAR_SPREAD = 30000;
+for(let i=0;i<4000;i++) {
+    STARS.push({
+        x:(Math.random()-0.5)*STAR_SPREAD,
+        y:(Math.random()-0.5)*STAR_SPREAD,
+        r:Math.random()*1.8+0.5,
+        b:Math.random()*0.6+0.4,
+        tw:Math.random()*Math.PI*2,
+        color: Math.random() > 0.85 ? ['#93c5fd','#fca5a5','#fde68a'][Math.floor(Math.random()*3)] : '#ffffff'
+    });
+}
 
 // Deep-space objects (visible at extreme zoom-out)
 const GALAXIES = [
-  {name:'Andromeda Galaxy',x:3000,y:-2500,r:200,color:'rgba(180,160,255,0.12)'},
-  {name:'Triangulum Galaxy',x:-3500,y:-3000,r:120,color:'rgba(160,200,255,0.08)'},
-  {name:'Large Magellanic Cloud',x:2800,y:3200,r:100,color:'rgba(200,180,255,0.06)'},
-  {name:'Centaurus A',x:-4000,y:2000,r:80,color:'rgba(255,180,160,0.05)'}
+  {name:'Andromeda Galaxy (M31)',x:5000,y:-4500,r:250,color:'rgba(180,160,255,0.15)'},
+  {name:'Triangulum Galaxy',x:-5500,y:-4000,r:150,color:'rgba(160,200,255,0.08)'},
+  {name:'Large Magellanic Cloud',x:4800,y:4200,r:120,color:'rgba(200,180,255,0.08)'},
+  {name:'Centaurus A',x:-6000,y:3000,r:100,color:'rgba(255,180,160,0.06)'}
+];
+
+// Interactive Constellations Map
+const CONSTELLATIONS = [
+    { name: 'Ursa Major', points: [[-4000,-2000], [-3500,-1800], [-3200,-1400], [-3000,-1000], [-2500,-900], [-2200,-1200], [-2000,-800]], color: 'rgba(255, 255, 255, 0.4)' },
+    { name: 'Orion', points: [[2000,1500], [2200,1300], [2500,1200], [2300,1800], [1800,2200], [2500,2500], [2900,2200], [2200,1300]], color: 'rgba(147, 197, 253, 0.4)' },
+    { name: 'Cassiopeia', points: [[-1000,-4000], [-500,-3500], [0,-3800], [500,-3200], [1000,-3600]], color: 'rgba(253, 164, 175, 0.4)' },
+    { name: 'Cygnus', points: [[1000,-2000], [1200,-1500], [1400,-1000], [600,-1200], [1800,-800]], color: 'rgba(216, 180, 254, 0.4)' },
+    { name: 'Scorpius', points: [[-2000,4000], [-1500,4200], [-1000,4600], [-800,5000], [-1200,5300], [-1600,5500]], color: 'rgba(110, 231, 183, 0.4)' }
 ];
 
 const DATA = {
@@ -147,8 +167,8 @@ function drawStars(t){
         if(sx<-5||sx>w+5||sy<-5||sy>h+5) continue;
         const twinkle=0.6+0.4*Math.sin(t*0.001+s.tw);
         ctx.globalAlpha=s.b*twinkle;
-        ctx.fillStyle='#fff';
-        ctx.beginPath();ctx.arc(sx,sy,s.r*Math.min(1,scale*0.5+0.5),0,Math.PI*2);ctx.fill();
+        ctx.fillStyle=s.color || '#fff';
+        ctx.beginPath();ctx.arc(sx,sy,s.r*Math.min(1,scale*0.1+0.9),0,Math.PI*2);ctx.fill();
     }
     ctx.globalAlpha=1;
 }
@@ -184,6 +204,33 @@ function drawGalaxies(t){
         ctx.fillStyle='rgba(255,255,255,0.4)';
         ctx.font='14px var(--font-sans)';ctx.textAlign='center';
         ctx.fillText(g.name,g.x,g.y+g.r+20);
+    }
+    
+    // Draw Constellations
+    if(scale > 0.005 && scale < 0.1) {
+        for(const c of CONSTELLATIONS) {
+            ctx.beginPath();
+            for(let i=0; i<c.points.length; i++) {
+                const pt = c.points[i];
+                if(i===0) ctx.moveTo(pt[0], pt[1]);
+                else ctx.lineTo(pt[0], pt[1]);
+            }
+            ctx.strokeStyle = c.color;
+            ctx.lineWidth = 1/scale;
+            ctx.stroke();
+            
+            // Constellation Label
+            const mid = c.points[Math.floor(c.points.length/2)];
+            ctx.fillStyle = c.color.replace('0.4', '0.8');
+            ctx.font = `${Math.max(12/scale, 4)}px var(--font-sans)`;
+            ctx.fillText(c.name, mid[0], mid[1] - 30/scale);
+            
+            // Draw major stars inside constellation 
+            ctx.fillStyle = '#fff';
+            for(const pt of c.points) {
+                ctx.beginPath();ctx.arc(pt[0], pt[1], 3/scale, 0, Math.PI*2);ctx.fill();
+            }
+        }
     }
     ctx.restore();
 }
