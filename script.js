@@ -46,7 +46,7 @@
         </div>`;
     document.body.appendChild(ctrl);
 
-    $('#z0').onclick = () => { zoomTarget = 0.000005; cx=0; cy=0; };
+    $('#z0').onclick = () => { zoomTarget = 0.00001; cx=200000; cy=-200000; };
     $('#z1').onclick = () => { zoomTarget = 0.001; cx=-100000; cy=50000; };
     $('#z2').onclick = () => { zoomTarget = 0.03; cx=0; cy=0; };
     $('#z3').onclick = () => { zoomTarget = 1.0; cx=0; cy=0; };
@@ -535,18 +535,35 @@
         const vl = cx - vw/2, vr = cx + vw/2, vt = cy - vh/2, vb = cy + vh/2;
 
         // ─── 1. GALAXIES & DEEP SPACE ───
-        if (zoom < 0.005) {
+        if (zoom < 0.01) {
             for(const g of GALAXIES) {
-                if(g.x < vl - g.r*2 || g.x > vr + g.r*2 || g.y < vt - g.r*2 || g.y > vb + g.r*2) continue;
+                const galaxyScreenR = g.r * zoom;
+                const galaxyMargin = Math.max(g.r * 3, 50/zoom);
+                if(g.x < vl - galaxyMargin || g.x > vr + galaxyMargin || g.y < vt - galaxyMargin || g.y > vb + galaxyMargin) continue;
                 
+                // At very far zoom, render galaxies as glowing dots
+                if(galaxyScreenR < 2) {
+                    const dotR = Math.max(3, 8 - galaxyScreenR * 2) / zoom;
+                    const dotG = ctx.createRadialGradient(g.x, g.y, 0, g.x, g.y, dotR);
+                    dotG.addColorStop(0, 'rgba(255,255,255,0.9)');
+                    dotG.addColorStop(0.3, g.color);
+                    dotG.addColorStop(1, 'transparent');
+                    ctx.fillStyle = dotG;
+                    ctx.beginPath(); ctx.arc(g.x, g.y, dotR, 0, Math.PI*2); ctx.fill();
+                }
+
                 // Render Galaxy Particles — spiral arms, elliptical, ring
                 const particles = genGalaxyParticles(g);
                 ctx.globalCompositeOperation = 'screen';
-                const pScale = 1 / Math.max(0.00001, zoom * 30);
-                for(const p of particles) {
-                    ctx.fillStyle = p.c;
-                    const ps = p.s * pScale;
-                    ctx.fillRect(g.x + p.dx - ps/2, g.y + p.dy - ps/2, ps, ps);
+                // Adaptive particle sizing: visible at all galaxy zoom levels
+                const pScale = Math.max(0.5, Math.min(200, 1.5 / Math.max(0.00001, zoom * 10)));
+                const particleAlpha = Math.min(1, galaxyScreenR / 2); // fade in as galaxy gets bigger
+                if(particleAlpha > 0.05) {
+                    for(const p of particles) {
+                        ctx.fillStyle = p.c;
+                        const ps = p.s * pScale;
+                        ctx.fillRect(g.x + p.dx - ps/2, g.y + p.dy - ps/2, ps, ps);
+                    }
                 }
                 ctx.globalCompositeOperation = 'source-over';
 
@@ -569,57 +586,114 @@
                 ctx.beginPath(); ctx.arc(g.x, g.y, g.r*1.2, 0, Math.PI*2); ctx.fill();
 
                 // BLACK HOLE at center (visible when zooming closer)
-                if (zoom > 0.0005) {
+                if (zoom > 0.0003) {
                     const bhSize = 100 + g.r * 0.02;
+                    const bhDetail = Math.min(1, (zoom - 0.0003) / 0.002);
+                    
+                    // Surrounding dense star cluster near black hole
+                    if(bhDetail > 0.3) {
+                        if(!g._bhStars) {
+                            let bseed = g.name.length * 99;
+                            const brng = () => { bseed=(bseed*16807)%2147483647; return(bseed-1)/2147483646; };
+                            g._bhStars = [];
+                            for(let i=0; i<200; i++) {
+                                const dist = bhSize * (2 + brng() * 15);
+                                const angle = brng() * Math.PI * 2;
+                                g._bhStars.push({
+                                    dx: Math.cos(angle) * dist,
+                                    dy: Math.sin(angle) * dist,
+                                    s: brng() * 1.5 + 0.5,
+                                    b: brng() * 0.5 + 0.5,
+                                    orbitV: (brng() - 0.5) * 0.003,
+                                    angle: angle
+                                });
+                            }
+                        }
+                        for(const bs of g._bhStars) {
+                            bs.angle += bs.orbitV;
+                            const dist = Math.hypot(bs.dx, bs.dy);
+                            const bsx = g.x + Math.cos(bs.angle) * dist;
+                            const bsy = g.y + Math.sin(bs.angle) * dist;
+                            const twinkle = 0.7 + 0.3 * Math.sin(time * 0.05 + bs.dx);
+                            ctx.fillStyle = `rgba(255,250,230,${bs.b * twinkle * bhDetail})`;
+                            const starS = bs.s / Math.max(0.001, zoom * 5);
+                            ctx.fillRect(bsx - starS/2, bsy - starS/2, starS, starS);
+                        }
+                    }
+                    
                     // Event horizon
                     ctx.fillStyle = '#000';
                     ctx.beginPath(); ctx.arc(g.x, g.y, bhSize, 0, Math.PI*2); ctx.fill();
                     
-                    // Accretion disk — glowing rings
-                    const rot = time * 0.01;
-                    const diskColors = ['rgba(255,140,50,0.7)', 'rgba(255,200,100,0.5)', 'rgba(200,150,255,0.4)'];
-                    for(let d=0; d<3; d++) {
-                        ctx.strokeStyle = diskColors[d];
-                        ctx.lineWidth = (12 - d*3) / Math.max(0.001, zoom*5);
+                    // Accretion disk — animated glowing rings
+                    const rot = time * 0.008;
+                    const diskLayers = [
+                        { color: 'rgba(255,100,30,0.8)', rx: 3.0, ry: 0.7, w: 15 },
+                        { color: 'rgba(255,180,60,0.6)', rx: 2.5, ry: 0.55, w: 10 },
+                        { color: 'rgba(255,220,120,0.5)', rx: 2.0, ry: 0.45, w: 7 },
+                        { color: 'rgba(180,140,255,0.35)', rx: 3.5, ry: 0.85, w: 5 },
+                    ];
+                    for(const dl of diskLayers) {
+                        ctx.strokeStyle = dl.color;
+                        ctx.lineWidth = dl.w / Math.max(0.001, zoom*5);
                         ctx.beginPath();
-                        ctx.ellipse(g.x, g.y, bhSize * (2.5 + d*0.8), bhSize * (0.6 + d*0.2), rot + d*0.3, 0, Math.PI*2);
+                        ctx.ellipse(g.x, g.y, bhSize * dl.rx, bhSize * dl.ry, rot, 0, Math.PI*2);
                         ctx.stroke();
                     }
+                    // Vertical jet (relativistic jet effect)
+                    if(bhDetail > 0.5) {
+                        const jetLen = bhSize * 8 * bhDetail;
+                        const jetG1 = ctx.createLinearGradient(g.x, g.y - jetLen, g.x, g.y);
+                        jetG1.addColorStop(0, 'transparent');
+                        jetG1.addColorStop(0.5, 'rgba(100,150,255,0.15)');
+                        jetG1.addColorStop(1, 'rgba(150,180,255,0.3)');
+                        ctx.fillStyle = jetG1;
+                        ctx.beginPath();
+                        ctx.moveTo(g.x - bhSize*0.3, g.y); ctx.lineTo(g.x, g.y - jetLen); ctx.lineTo(g.x + bhSize*0.3, g.y);
+                        ctx.fill();
+                        const jetG2 = ctx.createLinearGradient(g.x, g.y, g.x, g.y + jetLen);
+                        jetG2.addColorStop(0, 'rgba(150,180,255,0.3)');
+                        jetG2.addColorStop(0.5, 'rgba(100,150,255,0.15)');
+                        jetG2.addColorStop(1, 'transparent');
+                        ctx.fillStyle = jetG2;
+                        ctx.beginPath();
+                        ctx.moveTo(g.x - bhSize*0.3, g.y); ctx.lineTo(g.x, g.y + jetLen); ctx.lineTo(g.x + bhSize*0.3, g.y);
+                        ctx.fill();
+                    }
                     
-                    // Gravitational lensing ring
-                    const lensG = ctx.createRadialGradient(g.x, g.y, bhSize*1.2, g.x, g.y, bhSize*2);
-                    lensG.addColorStop(0, 'rgba(255,220,150,0.5)');
-                    lensG.addColorStop(0.5, 'rgba(255,180,100,0.2)');
+                    // Gravitational lensing ring (photon sphere)
+                    const lensG = ctx.createRadialGradient(g.x, g.y, bhSize*0.8, g.x, g.y, bhSize*2.5);
+                    lensG.addColorStop(0, 'rgba(255,220,150,0.6)');
+                    lensG.addColorStop(0.3, 'rgba(255,180,100,0.3)');
+                    lensG.addColorStop(0.7, 'rgba(200,150,100,0.1)');
                     lensG.addColorStop(1, 'transparent');
                     ctx.fillStyle = lensG;
-                    ctx.beginPath(); ctx.arc(g.x, g.y, bhSize*2, 0, Math.PI*2); ctx.fill();
+                    ctx.beginPath(); ctx.arc(g.x, g.y, bhSize*2.5, 0, Math.PI*2); ctx.fill();
 
                     // BH label
                     ctx.fillStyle = 'rgba(255,200,150,0.9)';
                     ctx.font = `bold ${10/zoom}px Inter,sans-serif`;
                     ctx.textAlign = 'center';
-                    ctx.fillText(g.bh || 'SMBH', g.x, g.y - bhSize*3);
+                    ctx.fillText(g.bh || 'SMBH', g.x, g.y - bhSize*4);
                     ctx.fillStyle = 'rgba(255,200,150,0.5)';
                     ctx.font = `${7/zoom}px Inter,sans-serif`;
-                    ctx.fillText(g.bhMass ? `Mass: ~${g.bhMass}` : '', g.x, g.y - bhSize*3 + 12/zoom);
+                    ctx.fillText(g.bhMass ? `Mass: ~${g.bhMass}` : '', g.x, g.y - bhSize*4 + 12/zoom);
                 }
 
-                // Galaxy Name Label — scales elegantly
+                // Galaxy Name Label — always visible, scales elegantly
                 const isHov = hoveredObj && hoveredObj.name === g.name;
-                if(zoom < 0.0005) {
-                    // Far view: show name + type
-                    ctx.fillStyle = isHov ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.75)';
-                    const fs = isHov ? 22/zoom : 16/zoom;
-                    ctx.font = `${isHov ? 'bold ' : '600 '}${fs}px Inter,sans-serif`;
-                    ctx.textAlign = 'center';
-                    ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 5;
-                    ctx.fillText(g.name, g.x, g.y - g.r/2.5);
-                    // Subtitle
-                    ctx.font = `${fs*0.55}px Inter,sans-serif`;
-                    ctx.fillStyle = isHov ? 'rgba(180,200,255,0.9)' : 'rgba(180,200,255,0.5)';
-                    ctx.fillText(`${g.type} • ${g.dist}`, g.x, g.y - g.r/2.5 + fs*1.1);
-                    ctx.shadowBlur = 0;
-                }
+                const labelAlpha = isHov ? 1 : Math.min(0.85, 0.3 + galaxyScreenR * 0.1);
+                ctx.fillStyle = `rgba(255,255,255,${labelAlpha})`;
+                const fs = Math.max(8, Math.min(200, isHov ? 22/zoom : 16/zoom));
+                ctx.font = `${isHov ? 'bold ' : '600 '}${fs}px Inter,sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 5;
+                ctx.fillText(g.name, g.x, g.y - Math.max(g.r/2.5, 20/zoom));
+                // Subtitle with type
+                ctx.font = `${fs*0.55}px Inter,sans-serif`;
+                ctx.fillStyle = `rgba(180,200,255,${labelAlpha * 0.7})`;
+                ctx.fillText(`${g.type} • ${g.dist}`, g.x, g.y - Math.max(g.r/2.5, 20/zoom) + fs*1.1);
+                ctx.shadowBlur = 0;
             }
 
             // Draw Clusters
