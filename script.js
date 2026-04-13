@@ -17,7 +17,7 @@
 
     // Camera
     let zoom = 0.01, zoomTarget = 0.01;
-    let cx = 0, cy = 0;
+    let cx = 0, cy = 0, cxTarget = 0, cyTarget = 0;
     let isDragging = false, dragStart = {x:0,y:0}, camStart = {x:0,y:0};
     const MIN_ZOOM = 0.0000001, MAX_ZOOM = 20000;
 
@@ -46,30 +46,31 @@
         </div>`;
     document.body.appendChild(ctrl);
 
-    $('#z0').onclick = () => { zoomTarget = 0.00001; cx=200000; cy=-200000; };
-    $('#z1').onclick = () => { zoomTarget = 0.001; cx=-100000; cy=50000; };
-    $('#z2').onclick = () => { zoomTarget = 0.03; cx=0; cy=0; };
-    $('#z3').onclick = () => { zoomTarget = 1.0; cx=0; cy=0; };
+    $('#z0').onclick = () => { zoomTarget = 0.000003; cxTarget=0; cyTarget=0; };
+    $('#z1').onclick = () => { zoomTarget = 0.0008; cxTarget=-100000; cyTarget=50000; };
+    $('#z2').onclick = () => { zoomTarget = 0.03; cxTarget=0; cyTarget=0; };
+    $('#z3').onclick = () => { zoomTarget = 1.0; cxTarget=0; cyTarget=0; };
     $('#ipClose').onclick = () => { $('#infoPanel').style.right = '-400px'; selectedObj = null; };
 
     canvas.addEventListener('mousedown', e => { isDragging=true; dragStart={x:e.clientX,y:e.clientY}; camStart={x:cx,y:cy}; });
     window.addEventListener('mouseup', () => isDragging=false);
-    window.addEventListener('mousemove', e => { if(!isDragging)return; cx=camStart.x-(e.clientX-dragStart.x)/zoom; cy=camStart.y-(e.clientY-dragStart.y)/zoom; });
+    window.addEventListener('mousemove', e => { if(!isDragging)return; cxTarget=camStart.x-(e.clientX-dragStart.x)/zoom; cyTarget=camStart.y-(e.clientY-dragStart.y)/zoom; });
     
     // Touch support
     canvas.addEventListener('touchstart', e => { if(e.touches.length===1){isDragging=true;dragStart={x:e.touches[0].clientX,y:e.touches[0].clientY};camStart={x:cx,y:cy};}e.preventDefault(); },{passive:false});
-    canvas.addEventListener('touchmove', e => { if(!isDragging||e.touches.length!==1)return; cx=camStart.x-(e.touches[0].clientX-dragStart.x)/zoom; cy=camStart.y-(e.touches[0].clientY-dragStart.y)/zoom; e.preventDefault(); },{passive:false});
+    canvas.addEventListener('touchmove', e => { if(!isDragging||e.touches.length!==1)return; cxTarget=camStart.x-(e.touches[0].clientX-dragStart.x)/zoom; cyTarget=camStart.y-(e.touches[0].clientY-dragStart.y)/zoom; e.preventDefault(); },{passive:false});
     canvas.addEventListener('touchend', () => isDragging=false);
     
-    // SMOOTH ADAPTIVE ZOOM - slower near transitions, logarithmic feel
+    // SMOOTH ADAPTIVE ZOOM - controlled speed with logarithmic feel
     canvas.addEventListener('wheel', e => {
         e.preventDefault();
-        // Adaptive zoom factor: slower at very small/large zooms for better control
+        // Adaptive zoom factor: much smoother at all levels
         let factor;
-        if(zoom < 0.0001) factor = e.deltaY > 0 ? 0.92 : 1.08;
-        else if(zoom < 0.01) factor = e.deltaY > 0 ? 0.93 : 1.07;
-        else if(zoom < 1) factor = e.deltaY > 0 ? 0.94 : 1.06;
-        else factor = e.deltaY > 0 ? 0.95 : 1.05;
+        if(zoom < 0.0001) factor = e.deltaY > 0 ? 0.96 : 1.04;
+        else if(zoom < 0.001) factor = e.deltaY > 0 ? 0.965 : 1.035;
+        else if(zoom < 0.01) factor = e.deltaY > 0 ? 0.97 : 1.03;
+        else if(zoom < 1) factor = e.deltaY > 0 ? 0.975 : 1.025;
+        else factor = e.deltaY > 0 ? 0.97 : 1.03;
         zoomTarget = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoomTarget * factor));
     },{passive:false});
 
@@ -349,37 +350,36 @@
         const isRing = g.type.includes('Ring');
 
         for(let i=0; i<numParticles; i++) {
-            let dx, dy;
+            let a, d, tilt, v;
             if(isRing) {
-                // Ring galaxy: particles concentrated in a ring
-                const ringR = g.r * (0.6 + rng() * 0.35);
-                const angle = rng() * Math.PI * 2;
-                dx = Math.cos(angle) * ringR + (rng()-0.5) * g.r * 0.15;
-                dy = Math.sin(angle) * ringR + (rng()-0.5) * g.r * 0.15;
+                tilt = 0.85;
+                d = g.r * (0.6 + rng() * 0.35);
+                a = rng() * Math.PI * 2;
+                v = 150 / Math.max(10, d) * (rng() > 0.5 ? 1 : -1);
             } else if(isElliptical) {
-                // Elliptical: smooth radial falloff, no arms
-                const rad = rng() * g.r * Math.pow(rng(), 0.3);
-                const angle = rng() * Math.PI * 2;
-                dx = Math.cos(angle) * rad * 1.3;
-                dy = Math.sin(angle) * rad * 0.7;
+                tilt = 0.7;
+                d = rng() * g.r * Math.pow(rng(), 0.3);
+                a = rng() * Math.PI * 2;
+                v = 200 / Math.max(10, d);
             } else if(isIrregular) {
-                // Irregular: clumpy random
-                dx = (rng()-0.5) * g.r * 2;
-                dy = (rng()-0.5) * g.r * 1.5;
-                if(Math.hypot(dx, dy) > g.r * 1.2) { dx *= 0.5; dy *= 0.5; }
+                tilt = 0.9;
+                d = rng() * g.r * 0.8;
+                a = rng() * Math.PI * 2;
+                v = 50 / Math.max(10, d) * (rng() > 0.5 ? 1 : -1);
             } else {
-                // Spiral arms
+                tilt = 0.6;
                 const armIndex = Math.floor(rng() * numArms);
                 const armOffset = (armIndex / numArms) * Math.PI * 2;
-                const rad = rng() * g.r;
-                const windFactor = 2.5 + rng();
-                const angle = armOffset + (rad / g.r) * windFactor + (rng()-0.5) * 0.4;
-                dx = Math.cos(angle) * rad;
-                dy = Math.sin(angle) * rad * 0.6; // Perspective tilt
+                d = rng() * g.r;
+                const windFactor = 2.5 + rng() * 0.2;
+                a = armOffset + (d / g.r) * windFactor + (rng()-0.5) * 0.4;
+                v = 180 / Math.max(200, d);
             }
 
-            // Color variation by distance from center
-            const distFromCenter = Math.hypot(dx, dy);
+            // Central BH velocity spike
+            if(d < g.r * 0.05) v *= 2.5;
+
+            const distFromCenter = d;
             const normalizedDist = distFromCenter / g.r;
             const hue = isRing ? 180 + rng()*40 : (220 + rng() * 30 - normalizedDist * 20);
             const sat = 50 + rng() * 40;
@@ -387,7 +387,7 @@
             const alpha = (0.15 + rng() * 0.6) * (1 - normalizedDist * 0.4);
 
             p.push({
-                dx, dy,
+                a, d, tilt, v,
                 s: rng() * 2.5 + 0.8,
                 c: `hsla(${hue}, ${sat}%, ${lum}%, ${alpha})`
             });
@@ -403,8 +403,10 @@
     canvas.addEventListener('click', e => {
         if(hoveredObj) {
             selectedObj = hoveredObj;
-            cx = selectedObj.x;
-            cy = selectedObj.y;
+            if (selectedObj.x !== undefined && selectedObj.y !== undefined) {
+                cxTarget = selectedObj.x;
+                cyTarget = selectedObj.y;
+            }
             zoomTarget = selectedObj.targetZoom || 15;
             
             // Show Panel
@@ -513,10 +515,10 @@
         ctx.fillRect(0, 0, w, h);
         time++;
 
-        // Smooth zoom interpolation — adaptive lerp
-        const zoomDiff = Math.abs(zoomTarget - zoom);
-        const lerpSpeed = zoomDiff > zoom * 0.5 ? 0.04 : 0.06;
-        zoom += (zoomTarget - zoom) * lerpSpeed;
+        // Logarithmic zoom interpolation and smooth camera targeting
+        zoom = Math.exp(Math.log(zoom) + (Math.log(zoomTarget) - Math.log(zoom)) * 0.04);
+        cx += (cxTarget - cx) * 0.04;
+        cy += (cyTarget - cy) * 0.04;
 
         // HUD
         let zText = zoom < 0.001 ? (zoom*1000000).toFixed(0) + ' µx' : (zoom*1000).toFixed(1) + 'x';
@@ -552,17 +554,19 @@
                     ctx.beginPath(); ctx.arc(g.x, g.y, dotR, 0, Math.PI*2); ctx.fill();
                 }
 
-                // Render Galaxy Particles — spiral arms, elliptical, ring
+                // Render Galaxy Particles — animated
                 const particles = genGalaxyParticles(g);
                 ctx.globalCompositeOperation = 'screen';
-                // Adaptive particle sizing: visible at all galaxy zoom levels
                 const pScale = Math.max(0.5, Math.min(200, 1.5 / Math.max(0.00001, zoom * 10)));
-                const particleAlpha = Math.min(1, galaxyScreenR / 2); // fade in as galaxy gets bigger
+                const particleAlpha = Math.min(1, galaxyScreenR / 2);
                 if(particleAlpha > 0.05) {
                     for(const p of particles) {
+                        const baseAngle = p.a + time * p.v * 0.0005; 
+                        const dx = Math.cos(baseAngle) * p.d;
+                        const dy = Math.sin(baseAngle) * p.d * p.tilt;
                         ctx.fillStyle = p.c;
                         const ps = p.s * pScale;
-                        ctx.fillRect(g.x + p.dx - ps/2, g.y + p.dy - ps/2, ps, ps);
+                        ctx.fillRect(g.x + dx - ps/2, g.y + dy - ps/2, ps, ps);
                     }
                 }
                 ctx.globalCompositeOperation = 'source-over';
@@ -696,23 +700,66 @@
                 ctx.shadowBlur = 0;
             }
 
-            // Draw Clusters
+            // Draw Clusters — visible glowing regions
             if (zoom < 0.001) {
                 for(const cl of CLUSTERS) {
-                    ctx.strokeStyle = 'rgba(200, 200, 255, 0.1)';
-                    ctx.lineWidth = 2000;
-                    ctx.setLineDash([5000, 5000]);
+                    // Soft glowing fill for cluster region
+                    const clGrad = ctx.createRadialGradient(cl.x, cl.y, cl.r * 0.1, cl.x, cl.y, cl.r);
+                    clGrad.addColorStop(0, 'rgba(100, 120, 255, 0.08)');
+                    clGrad.addColorStop(0.5, 'rgba(80, 100, 220, 0.04)');
+                    clGrad.addColorStop(1, 'transparent');
+                    ctx.fillStyle = clGrad;
+                    ctx.beginPath(); ctx.arc(cl.x, cl.y, cl.r, 0, Math.PI*2); ctx.fill();
+
+                    // Dashed border — properly scaled
+                    const dashLen = Math.max(10000, cl.r * 0.03);
+                    ctx.strokeStyle = 'rgba(150, 170, 255, 0.2)';
+                    ctx.lineWidth = Math.max(500, 3/zoom);
+                    ctx.setLineDash([dashLen, dashLen]);
                     ctx.beginPath(); ctx.arc(cl.x, cl.y, cl.r, 0, Math.PI*2); ctx.stroke();
                     ctx.setLineDash([]);
-                    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-                    ctx.font = `bold ${30/zoom}px Inter,sans-serif`;
+
+                    // Cluster label
+                    ctx.fillStyle = 'rgba(180,200,255,0.6)';
+                    const clFs = Math.max(10, Math.min(500, 25/zoom));
+                    ctx.font = `bold ${clFs}px Inter,sans-serif`;
                     ctx.textAlign = 'center';
-                    ctx.fillText(cl.name, cl.x, cl.y - cl.r - 10000);
+                    ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 4;
+                    ctx.fillText(cl.name, cl.x, cl.y - cl.r * 0.85);
+                    ctx.font = `${clFs * 0.5}px Inter,sans-serif`;
+                    ctx.fillStyle = 'rgba(150,170,255,0.4)';
+                    ctx.fillText('Galaxy Cluster', cl.x, cl.y - cl.r * 0.85 + clFs * 1.2);
+                    ctx.shadowBlur = 0;
                 }
-                // Supercluster
-                ctx.fillStyle = 'rgba(255,255,255,0.2)';
-                ctx.font = `bold ${50/zoom}px Inter,sans-serif`;
-                ctx.fillText("Laniakea Supercluster Center", -2000000, 1000000);
+                // Supercluster — large-scale structure
+                if(zoom < 0.0001) {
+                    // Draw filament connections between clusters
+                    ctx.strokeStyle = 'rgba(120,140,255,0.08)';
+                    ctx.lineWidth = Math.max(5000, 5/zoom);
+                    ctx.beginPath();
+                    ctx.moveTo(CLUSTERS[0].x, CLUSTERS[0].y);
+                    ctx.lineTo(CLUSTERS[1].x, CLUSTERS[1].y);
+                    ctx.lineTo(CLUSTERS[2].x, CLUSTERS[2].y);
+                    ctx.stroke();
+
+                    // Supercluster halo
+                    const scGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 12000000);
+                    scGrad.addColorStop(0, 'rgba(100,120,255,0.03)');
+                    scGrad.addColorStop(0.7, 'rgba(80,100,200,0.01)');
+                    scGrad.addColorStop(1, 'transparent');
+                    ctx.fillStyle = scGrad;
+                    ctx.beginPath(); ctx.arc(0, 0, 12000000, 0, Math.PI*2); ctx.fill();
+
+                    // Supercluster label
+                    const scFs = Math.max(20, 60/zoom);
+                    ctx.fillStyle = 'rgba(200,220,255,0.35)';
+                    ctx.font = `300 ${scFs}px Inter,sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('LANIAKEA SUPERCLUSTER', 0, -8000000);
+                    ctx.font = `${scFs*0.4}px Inter,sans-serif`;
+                    ctx.fillStyle = 'rgba(200,220,255,0.2)';
+                    ctx.fillText('~250 Mpc • ~100,000 galaxies', 0, -8000000 + scFs * 0.8);
+                }
             }
         }
 
