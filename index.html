@@ -3,39 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solar System Simulator — Planets & Moons | QuickUtils</title>
-    <meta name="description" content="Interactive solar system map with planets, dwarf planets, and localized moon orbital systems.">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🪐</text></svg>">
+    <title>Solar System & Galaxy Explorer — Constellations, Stars & Exoplanets | QuickUtils</title>
+    <meta name="keywords" content="QuickUtils, solar, system, code, design, productivity, online tools">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://quickutils.top/solar-system/">
+    <meta property="og:title" content="Solar System & Galaxy Explorer — Constellations, Stars & Exoplanets | QuickUtils">
+    <meta property="og:description" content="Explore the galaxy! Zoom from deep space through real constellations (Orion, Ursa Major, Cassiopeia) down to star systems with orbiting exoplanets.">
+    <meta property="og:url" content="https://quickutils.top/solar-system/">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="description" content="Explore the galaxy! Zoom from deep space through real constellations (Orion, Ursa Major, Cassiopeia) down to star systems with orbiting exoplanets.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔭</text></svg>">
     <link rel="stylesheet" href="quickutils-core.css">
-    <link rel="stylesheet" href="style.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; background: #020208; font-family: 'Inter', sans-serif; }
+        #solarCanvas { display: block; width: 100vw; height: 100vh; cursor: grab; }
+        #solarCanvas:active { cursor: grabbing; }
+        .navbar { position: fixed; top: 0; left: 0; right: 0; z-index: 20; background: rgba(2,2,8,0.6); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.08); padding: 8px 16px; display: flex; align-items: center; justify-content: space-between; }
+        .brand { color: #fff; text-decoration: none; font-weight: 700; font-size: 1.1rem; }
+        .nav-links { display: flex; gap: 8px; align-items: center; }
+        .nav-links a { color: #888; text-decoration: none; font-size: 0.85rem; }
+        .btn { padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; }
+        .btn-sm { padding: 4px 10px; font-size: 0.75rem; }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: #ccc; border: 1px solid rgba(255,255,255,0.15); }
+        .btn-secondary:hover { background: rgba(255,255,255,0.2); color: #fff; }
+        .kofi-link { color: #ff5e5b !important; font-weight: 600; }
+    </style>
 </head>
 <body>
-    <nav class="navbar"><div class="container nav-inner">
-        <a href="https://quickutils.top" class="brand">🪐 Solar System</a>
+    <nav class="navbar">
+        <a href="https://quickutils.top" class="brand">🔭 Galaxy Explorer</a>
         <div class="nav-links">
-            <button class="btn btn-sm btn-secondary" id="resetViewBtn">Reset View</button>
+            <button id="toggleConstellations" class="btn btn-secondary btn-sm">Constellations: ON</button>
+            <button id="toggleMoons" class="btn btn-secondary btn-sm">Moons: ON</button>
             <a href="https://ko-fi.com/dayatin" target="_blank" class="kofi-link">☕ Support</a>
-            <button id="themeBtn" class="theme-btn">🌙</button>
         </div>
-    </div></nav>
-    <main class="app-container">
-        <div class="canvas-container">
-            <canvas id="spaceCanvas"></canvas>
-            <div id="uiOverlay" class="ui-overlay pointer-none">
-                <div id="infoPanel" class="info-panel glass-card pointer-auto" style="display:none">
-                    <button id="closeInfo" class="icon-btn right-btn">✕</button>
-                    <h2 id="sysTitle">Target</h2>
-                    <div class="info-stats" id="sysStats"></div>
-                    <p id="sysDesc" class="text-muted mt-2 text-sm"></p>
-                    <button id="zoomInBtn" class="btn btn-primary btn-sm mt-3 w-100" style="display:none">View Moons System</button>
-                </div>
-            </div>
-            <div class="controls-overlay">
-                <label>Speed <input type="range" id="speedSlider" min="0" max="100" value="20"></label>
-                <span class="hint">Scroll=Zoom • Drag=Pan</span>
-            </div>
+    </nav>
+    <div id="uiOverlay" style="position:fixed;bottom:20px;left:20px;z-index:20;background:rgba(2,2,8,0.7);padding:10px 15px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(8px);">
+        <div style="font-size:0.75rem;color:#888;margin-bottom:5px;font-weight:600;">ZOOM DEPTH</div>
+        <div id="zoomLevelText" style="font-size:1.1rem;color:#fff;font-weight:700;">Local System</div>
+        <div style="display:flex;gap:5px;margin-top:8px;">
+            <button id="zoomInBtn" class="btn btn-secondary" style="padding:4px 10px;font-size:1.1rem;">+</button>
+            <button id="zoomOutBtn" class="btn btn-secondary" style="padding:4px 10px;font-size:1.1rem;">-</button>
         </div>
-    </main>
+    </div>
+    <canvas id="solarCanvas"></canvas>
     <script src="quickutils-core.js"></script>
     <script src="script.js"></script>
 </body>
