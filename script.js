@@ -61,10 +61,9 @@
     canvas.addEventListener('touchmove', e => { if(!isDragging||e.touches.length!==1)return; cxTarget=camStart.x-(e.touches[0].clientX-dragStart.x)/zoom; cyTarget=camStart.y-(e.touches[0].clientY-dragStart.y)/zoom; e.preventDefault(); },{passive:false});
     canvas.addEventListener('touchend', () => isDragging=false);
     
-    // SMOOTH ADAPTIVE ZOOM - controlled speed with logarithmic feel
+    // SMOOTH ADAPTIVE ZOOM
     canvas.addEventListener('wheel', e => {
         e.preventDefault();
-        // Adaptive zoom factor: much smoother at all levels
         let factor;
         if(zoom < 0.0001) factor = e.deltaY > 0 ? 0.96 : 1.04;
         else if(zoom < 0.001) factor = e.deltaY > 0 ? 0.965 : 1.035;
@@ -194,7 +193,6 @@
             { name: 'Elnath', x: 9000, y: 7000, s: 5, color: '#cce0ff', type: 'Giant', mag: 1.65, planets: 0 },
             { name: 'Alcyone', x: 8500, y: 9000, s: 4, color: '#bbddff', type: 'Binary', mag: 2.85, planets: 0 },
         ], lines: [[0,1],[0,2]] },
-        // ─── NEW CONSTELLATIONS ───
         { name: 'Canis Major', cx: 1000, cy: 4000, stars: [
             { name: 'Sirius', x: 1000, y: 4000, s: 10, color: '#ffffff', type: 'Main Sequence A1V', mag: -1.46, planets: 0, dist: '8.6 ly' },
             { name: 'Adhara', x: 500, y: 4800, s: 5, color: '#cce0ff', type: 'Binary Giant', mag: 1.50, planets: 0 },
@@ -236,7 +234,7 @@
     ];
 
     // ═══════════════════════════════════════════════════════
-    // SOLAR SYSTEM — Accurate Moon Counts
+    // SOLAR SYSTEM — Named Moons
     // ═══════════════════════════════════════════════════════
     const sun = { r: 50, color: '#facc15', glow: '#fef08a' };
     const planets = [
@@ -312,17 +310,16 @@
     }
 
     // ═══════════════════════════════════════════════════════
-    // GALAXIES — Full Visual Rendering
+    // GALAXIES — Full Visual Rendering (PERSISTENT across zoom)
     // ═══════════════════════════════════════════════════════
     const GALAXIES = [
-        { name: 'Milky Way', x: -100000, y: 50000, r: 8000, color: '#cce0ff', type: 'Barred Spiral Galaxy', dist: '0 Mly', arms: 4, bh: 'Sagittarius A*', bhMass: '4M solar' },
+        { name: 'Milky Way', x: -100000, y: 50000, r: 8000, color: '#cce0ff', type: 'Barred Spiral Galaxy', dist: '0 Mly', arms: 4, bh: 'Sagittarius A*', bhMass: '4M solar', orionArm: true },
         { name: 'Andromeda (M31)', x: 800000, y: -500000, r: 10000, color: '#e6f0ff', type: 'Spiral Galaxy', dist: '2.5 Mly', arms: 2, bh: 'P2', bhMass: '140M solar' },
         { name: 'Triangulum (M33)', x: 600000, y: -400000, r: 4000, color: '#ccccff', type: 'Spiral Galaxy', dist: '2.7 Mly', arms: 2, bh: 'M33 X-7', bhMass: '15M solar' },
         { name: 'Centaurus A', x: -400000, y: 600000, r: 6000, color: '#ffccb3', type: 'Lenticular Galaxy', dist: '11 Mly', arms: 0, bh: 'Cen A BH', bhMass: '55M solar' },
         { name: 'M81 (Bode)', x: 200000, y: -800000, r: 5000, color: '#e6e6fa', type: 'Spiral Galaxy', dist: '11.8 Mly', arms: 2, bh: 'M81*', bhMass: '70M solar' },
         { name: 'Sombrero (M104)', x: -700000, y: -200000, r: 5500, color: '#ffebcc', type: 'Spiral Galaxy', dist: '31 Mly', arms: 1, bh: 'M104 BH', bhMass: '1B solar' },
         { name: 'Pinwheel (M101)', x: 1200000, y: 300000, r: 7000, color: '#eef', type: 'Spiral Galaxy', dist: '21 Mly', arms: 5, bh: 'M101 Center', bhMass: '20M solar' },
-        // NEW GALAXIES
         { name: 'Whirlpool (M51)', x: 500000, y: 700000, r: 5000, color: '#ddeeff', type: 'Spiral Galaxy', dist: '23 Mly', arms: 2, bh: 'M51 BH', bhMass: '40M solar' },
         { name: 'Large Magellanic Cloud', x: -300000, y: 300000, r: 3500, color: '#e8e0ff', type: 'Irregular Galaxy', dist: '0.16 Mly', arms: 1, bh: 'LMC X-1', bhMass: '10M solar' },
         { name: 'Small Magellanic Cloud', x: -250000, y: 350000, r: 2000, color: '#e0e8ff', type: 'Irregular Galaxy', dist: '0.20 Mly', arms: 0, bh: 'SMC BH', bhMass: '5M solar' },
@@ -352,19 +349,13 @@
         for(let i=0; i<numParticles; i++) {
             let a, d, tilt, v;
             if(isRing) {
-                tilt = 0.85;
-                d = g.r * (0.6 + rng() * 0.35);
-                a = rng() * Math.PI * 2;
+                tilt = 0.85; d = g.r * (0.6 + rng() * 0.35); a = rng() * Math.PI * 2;
                 v = 150 / Math.max(10, d) * (rng() > 0.5 ? 1 : -1);
             } else if(isElliptical) {
-                tilt = 0.7;
-                d = rng() * g.r * Math.pow(rng(), 0.3);
-                a = rng() * Math.PI * 2;
+                tilt = 0.7; d = rng() * g.r * Math.pow(rng(), 0.3); a = rng() * Math.PI * 2;
                 v = 200 / Math.max(10, d);
             } else if(isIrregular) {
-                tilt = 0.9;
-                d = rng() * g.r * 0.8;
-                a = rng() * Math.PI * 2;
+                tilt = 0.9; d = rng() * g.r * 0.8; a = rng() * Math.PI * 2;
                 v = 50 / Math.max(10, d) * (rng() > 0.5 ? 1 : -1);
             } else {
                 tilt = 0.6;
@@ -375,22 +366,13 @@
                 a = armOffset + (d / g.r) * windFactor + (rng()-0.5) * 0.4;
                 v = 180 / Math.max(200, d);
             }
-
-            // Central BH velocity spike
             if(d < g.r * 0.05) v *= 2.5;
-
-            const distFromCenter = d;
-            const normalizedDist = distFromCenter / g.r;
+            const normalizedDist = d / g.r;
             const hue = isRing ? 180 + rng()*40 : (220 + rng() * 30 - normalizedDist * 20);
             const sat = 50 + rng() * 40;
             const lum = 55 + rng() * 25 - normalizedDist * 15;
             const alpha = (0.15 + rng() * 0.6) * (1 - normalizedDist * 0.4);
-
-            p.push({
-                a, d, tilt, v,
-                s: rng() * 2.5 + 0.8,
-                c: `hsla(${hue}, ${sat}%, ${lum}%, ${alpha})`
-            });
+            p.push({ a, d, tilt, v, s: rng() * 2.5 + 0.8, c: `hsla(${hue}, ${sat}%, ${lum}%, ${alpha})` });
         }
         g._particles = p;
         return p;
@@ -409,7 +391,6 @@
             }
             zoomTarget = selectedObj.targetZoom || 15;
             
-            // Show Panel
             $('#ipTitle').innerHTML = `<span>${selectedObj.emoji || '✨'}</span> ${selectedObj.name}`;
             $('#ipType').textContent = selectedObj.type || 'Celestial Object';
             $('#ipMag').textContent = selectedObj.mag !== undefined ? selectedObj.mag : 'N/A';
@@ -429,14 +410,13 @@
         hoveredObj = null;
 
         if (zoom < 0.005) {
-            // Check Galaxies
             for(const g of GALAXIES) {
                 if(Math.hypot(mx - g.x, my - g.y) < Math.max(g.r, 50/zoom)) {
                     hoveredObj = {...g, emoji: '🌌', targetZoom: 0.005};
                     break;
                 }
             }
-        } else if (zoom > 0.005 && zoom < 10) {
+        } else if (zoom >= 0.005 && zoom < 10) {
             // Check Stars
             for(const c of CONSTELLATIONS) {
                 for(const s of c.stars) {
@@ -447,7 +427,7 @@
                 }
                 if(hoveredObj) break;
             }
-            // Check Solar System Planets (if near 0,0)
+            // Check Solar System Planets
             if(!hoveredObj && Math.hypot(mx, my) < 2000) {
                 if(Math.hypot(mx, my) < sun.r) {
                     hoveredObj = {name:'Sun', x:0, y:0, type:'G-Type Main Sequence', emoji:'☀️', targetZoom: 1.5, mag: -26.74, planets: 8, dist: '0 ly'};
@@ -459,6 +439,15 @@
                             hoveredObj = {...p, x:px, y:py, emoji:'🪐', type:'Solar System Planet', mag:'N/A', planets: p.moons.length + ' moons', targetZoom: 25, dist: p.d + ' Mkm'};
                             break;
                         }
+                    }
+                }
+            }
+            // Check galaxies at this zoom (they persist)
+            if(!hoveredObj && zoom < 0.1) {
+                for(const g of GALAXIES) {
+                    if(Math.hypot(mx - g.x, my - g.y) < Math.max(g.r * 0.5, 200/zoom)) {
+                        hoveredObj = {...g, emoji: '🌌', targetZoom: 0.01};
+                        break;
                     }
                 }
             }
@@ -515,7 +504,7 @@
         ctx.fillRect(0, 0, w, h);
         time++;
 
-        // Logarithmic zoom interpolation and smooth camera targeting
+        // Logarithmic zoom interpolation and smooth camera
         zoom = Math.exp(Math.log(zoom) + (Math.log(zoomTarget) - Math.log(zoom)) * 0.04);
         cx += (cxTarget - cx) * 0.04;
         cy += (cyTarget - cy) * 0.04;
@@ -523,8 +512,6 @@
         // HUD
         let zText = zoom < 0.001 ? (zoom*1000000).toFixed(0) + ' µx' : (zoom*1000).toFixed(1) + 'x';
         $('#zoomInfo').textContent = `Zoom: ${zText} | [${Math.round(cx)}, ${Math.round(cy)}]`;
-        
-        // Update zoom depth label
         const depthLabel = $('#zoomLevelText');
         if(depthLabel) depthLabel.textContent = getZoomDepthLabel(zoom);
 
@@ -536,8 +523,10 @@
         const vw = w/zoom, vh = h/zoom;
         const vl = cx - vw/2, vr = cx + vw/2, vt = cy - vh/2, vb = cy + vh/2;
 
-        // ─── 1. GALAXIES & DEEP SPACE ───
-        if (zoom < 0.01) {
+        // ─── 1. GALAXIES & DEEP SPACE (ALWAYS VISIBLE when zoom < 0.1) ───
+        if (zoom < 0.1) {
+            const galaxyFade = zoom > 0.01 ? Math.max(0, 1 - (zoom - 0.01) / 0.09) : 1;
+            
             for(const g of GALAXIES) {
                 const galaxyScreenR = g.r * zoom;
                 const galaxyMargin = Math.max(g.r * 3, 50/zoom);
@@ -554,12 +543,13 @@
                     ctx.beginPath(); ctx.arc(g.x, g.y, dotR, 0, Math.PI*2); ctx.fill();
                 }
 
-                // Render Galaxy Particles — animated
+                // Render Galaxy Particles — animated, with fade
                 const particles = genGalaxyParticles(g);
                 ctx.globalCompositeOperation = 'screen';
                 const pScale = Math.max(0.5, Math.min(200, 1.5 / Math.max(0.00001, zoom * 10)));
-                const particleAlpha = Math.min(1, galaxyScreenR / 2);
-                if(particleAlpha > 0.05) {
+                const particleAlpha = Math.min(1, galaxyScreenR / 2) * galaxyFade;
+                if(particleAlpha > 0.02) {
+                    ctx.globalAlpha = particleAlpha;
                     for(const p of particles) {
                         const baseAngle = p.a + time * p.v * 0.0005; 
                         const dx = Math.cos(baseAngle) * p.d;
@@ -568,23 +558,24 @@
                         const ps = p.s * pScale;
                         ctx.fillRect(g.x + dx - ps/2, g.y + dy - ps/2, ps, ps);
                     }
+                    ctx.globalAlpha = 1;
                 }
                 ctx.globalCompositeOperation = 'source-over';
 
                 // Central Bulge Glow
                 const bulgeR = g.type.includes('Elliptical') ? g.r/2 : g.r/4;
                 const coreG = ctx.createRadialGradient(g.x, g.y, 0, g.x, g.y, bulgeR);
-                coreG.addColorStop(0, 'rgba(255,255,255,0.9)');
+                coreG.addColorStop(0, `rgba(255,255,255,${0.9 * galaxyFade})`);
                 coreG.addColorStop(0.15, g.color);
-                coreG.addColorStop(0.6, g.color.replace(')', ',0.3)').replace('rgb', 'rgba'));
+                coreG.addColorStop(0.6, `rgba(180,200,255,${0.3 * galaxyFade})`);
                 coreG.addColorStop(1, 'transparent');
                 ctx.fillStyle = coreG;
                 ctx.beginPath(); ctx.arc(g.x, g.y, bulgeR, 0, Math.PI*2); ctx.fill();
 
-                // Outer halo glow
+                // Outer halo
                 const haloG = ctx.createRadialGradient(g.x, g.y, g.r*0.3, g.x, g.y, g.r*1.2);
                 haloG.addColorStop(0, 'transparent');
-                haloG.addColorStop(0.5, `rgba(150,170,255,0.03)`);
+                haloG.addColorStop(0.5, `rgba(150,170,255,${0.03 * galaxyFade})`);
                 haloG.addColorStop(1, 'transparent');
                 ctx.fillStyle = haloG;
                 ctx.beginPath(); ctx.arc(g.x, g.y, g.r*1.2, 0, Math.PI*2); ctx.fill();
@@ -594,7 +585,7 @@
                     const bhSize = 100 + g.r * 0.02;
                     const bhDetail = Math.min(1, (zoom - 0.0003) / 0.002);
                     
-                    // Surrounding dense star cluster near black hole
+                    // Stars surrounding black hole
                     if(bhDetail > 0.3) {
                         if(!g._bhStars) {
                             let bseed = g.name.length * 99;
@@ -604,12 +595,9 @@
                                 const dist = bhSize * (2 + brng() * 15);
                                 const angle = brng() * Math.PI * 2;
                                 g._bhStars.push({
-                                    dx: Math.cos(angle) * dist,
-                                    dy: Math.sin(angle) * dist,
-                                    s: brng() * 1.5 + 0.5,
-                                    b: brng() * 0.5 + 0.5,
-                                    orbitV: (brng() - 0.5) * 0.003,
-                                    angle: angle
+                                    dx: Math.cos(angle) * dist, dy: Math.sin(angle) * dist,
+                                    s: brng() * 1.5 + 0.5, b: brng() * 0.5 + 0.5,
+                                    orbitV: (brng() - 0.5) * 0.003, angle: angle
                                 });
                             }
                         }
@@ -619,23 +607,24 @@
                             const bsx = g.x + Math.cos(bs.angle) * dist;
                             const bsy = g.y + Math.sin(bs.angle) * dist;
                             const twinkle = 0.7 + 0.3 * Math.sin(time * 0.05 + bs.dx);
-                            ctx.fillStyle = `rgba(255,250,230,${bs.b * twinkle * bhDetail})`;
+                            ctx.fillStyle = `rgba(255,250,230,${bs.b * twinkle * bhDetail * galaxyFade})`;
                             const starS = bs.s / Math.max(0.001, zoom * 5);
                             ctx.fillRect(bsx - starS/2, bsy - starS/2, starS, starS);
                         }
                     }
                     
                     // Event horizon
+                    ctx.globalAlpha = galaxyFade;
                     ctx.fillStyle = '#000';
                     ctx.beginPath(); ctx.arc(g.x, g.y, bhSize, 0, Math.PI*2); ctx.fill();
                     
-                    // Accretion disk — animated glowing rings
+                    // Accretion disk
                     const rot = time * 0.008;
                     const diskLayers = [
-                        { color: 'rgba(255,100,30,0.8)', rx: 3.0, ry: 0.7, w: 15 },
-                        { color: 'rgba(255,180,60,0.6)', rx: 2.5, ry: 0.55, w: 10 },
-                        { color: 'rgba(255,220,120,0.5)', rx: 2.0, ry: 0.45, w: 7 },
-                        { color: 'rgba(180,140,255,0.35)', rx: 3.5, ry: 0.85, w: 5 },
+                        { color: `rgba(255,100,30,${0.8*galaxyFade})`, rx: 3.0, ry: 0.7, w: 15 },
+                        { color: `rgba(255,180,60,${0.6*galaxyFade})`, rx: 2.5, ry: 0.55, w: 10 },
+                        { color: `rgba(255,220,120,${0.5*galaxyFade})`, rx: 2.0, ry: 0.45, w: 7 },
+                        { color: `rgba(180,140,255,${0.35*galaxyFade})`, rx: 3.5, ry: 0.85, w: 5 },
                     ];
                     for(const dl of diskLayers) {
                         ctx.strokeStyle = dl.color;
@@ -644,20 +633,20 @@
                         ctx.ellipse(g.x, g.y, bhSize * dl.rx, bhSize * dl.ry, rot, 0, Math.PI*2);
                         ctx.stroke();
                     }
-                    // Vertical jet (relativistic jet effect)
+                    // Vertical jets
                     if(bhDetail > 0.5) {
                         const jetLen = bhSize * 8 * bhDetail;
                         const jetG1 = ctx.createLinearGradient(g.x, g.y - jetLen, g.x, g.y);
                         jetG1.addColorStop(0, 'transparent');
-                        jetG1.addColorStop(0.5, 'rgba(100,150,255,0.15)');
-                        jetG1.addColorStop(1, 'rgba(150,180,255,0.3)');
+                        jetG1.addColorStop(0.5, `rgba(100,150,255,${0.15*galaxyFade})`);
+                        jetG1.addColorStop(1, `rgba(150,180,255,${0.3*galaxyFade})`);
                         ctx.fillStyle = jetG1;
                         ctx.beginPath();
                         ctx.moveTo(g.x - bhSize*0.3, g.y); ctx.lineTo(g.x, g.y - jetLen); ctx.lineTo(g.x + bhSize*0.3, g.y);
                         ctx.fill();
                         const jetG2 = ctx.createLinearGradient(g.x, g.y, g.x, g.y + jetLen);
-                        jetG2.addColorStop(0, 'rgba(150,180,255,0.3)');
-                        jetG2.addColorStop(0.5, 'rgba(100,150,255,0.15)');
+                        jetG2.addColorStop(0, `rgba(150,180,255,${0.3*galaxyFade})`);
+                        jetG2.addColorStop(0.5, `rgba(100,150,255,${0.15*galaxyFade})`);
                         jetG2.addColorStop(1, 'transparent');
                         ctx.fillStyle = jetG2;
                         ctx.beginPath();
@@ -665,61 +654,90 @@
                         ctx.fill();
                     }
                     
-                    // Gravitational lensing ring (photon sphere)
+                    // Gravitational lensing ring
                     const lensG = ctx.createRadialGradient(g.x, g.y, bhSize*0.8, g.x, g.y, bhSize*2.5);
-                    lensG.addColorStop(0, 'rgba(255,220,150,0.6)');
-                    lensG.addColorStop(0.3, 'rgba(255,180,100,0.3)');
-                    lensG.addColorStop(0.7, 'rgba(200,150,100,0.1)');
+                    lensG.addColorStop(0, `rgba(255,220,150,${0.6*galaxyFade})`);
+                    lensG.addColorStop(0.3, `rgba(255,180,100,${0.3*galaxyFade})`);
+                    lensG.addColorStop(0.7, `rgba(200,150,100,${0.1*galaxyFade})`);
                     lensG.addColorStop(1, 'transparent');
                     ctx.fillStyle = lensG;
                     ctx.beginPath(); ctx.arc(g.x, g.y, bhSize*2.5, 0, Math.PI*2); ctx.fill();
 
                     // BH label
-                    ctx.fillStyle = 'rgba(255,200,150,0.9)';
+                    ctx.fillStyle = `rgba(255,200,150,${0.9*galaxyFade})`;
                     ctx.font = `bold ${10/zoom}px Inter,sans-serif`;
                     ctx.textAlign = 'center';
                     ctx.fillText(g.bh || 'SMBH', g.x, g.y - bhSize*4);
-                    ctx.fillStyle = 'rgba(255,200,150,0.5)';
+                    ctx.fillStyle = `rgba(255,200,150,${0.5*galaxyFade})`;
                     ctx.font = `${7/zoom}px Inter,sans-serif`;
                     ctx.fillText(g.bhMass ? `Mass: ~${g.bhMass}` : '', g.x, g.y - bhSize*4 + 12/zoom);
+                    ctx.globalAlpha = 1;
                 }
 
-                // Galaxy Name Label — always visible, scales elegantly
+                // ─── ORION ARM — Milky Way's spiral arm connecting to solar system ───
+                if(g.orionArm && zoom > 0.002 && zoom < 0.08) {
+                    const armAlpha = Math.min(0.4, (zoom - 0.002) / 0.01) * galaxyFade;
+                    // Draw arm from Milky Way center toward (0,0) solar system
+                    ctx.strokeStyle = `rgba(150,180,255,${armAlpha * 0.3})`;
+                    ctx.lineWidth = 3000;
+                    ctx.beginPath();
+                    ctx.moveTo(g.x, g.y);
+                    ctx.quadraticCurveTo(g.x * 0.4, g.y * 0.6, 0, 0);
+                    ctx.stroke();
+
+                    // Label
+                    const midX = g.x * 0.3, midY = g.y * 0.4;
+                    ctx.fillStyle = `rgba(180,200,255,${armAlpha})`;
+                    ctx.font = `300 ${12/zoom}px Inter,sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('ORION ARM', midX, midY - 2000);
+                    ctx.font = `${8/zoom}px Inter,sans-serif`;
+                    ctx.fillStyle = `rgba(150,170,255,${armAlpha * 0.6})`;
+                    ctx.fillText('Our location in the Milky Way', midX, midY - 2000 + 14/zoom);
+
+                    // Sun marker at origin
+                    if(zoom > 0.005) {
+                        const sunG = ctx.createRadialGradient(0, 0, 0, 0, 0, 500);
+                        sunG.addColorStop(0, `rgba(255,200,50,${armAlpha})`);
+                        sunG.addColorStop(1, 'transparent');
+                        ctx.fillStyle = sunG;
+                        ctx.beginPath(); ctx.arc(0, 0, 500, 0, Math.PI*2); ctx.fill();
+                        ctx.fillStyle = `rgba(255,220,100,${armAlpha})`;
+                        ctx.font = `bold ${10/zoom}px Inter,sans-serif`;
+                        ctx.fillText('☀ Sol / Solar System', 0, -800);
+                    }
+                }
+
+                // Galaxy Name Label — always visible
                 const isHov = hoveredObj && hoveredObj.name === g.name;
-                const labelAlpha = isHov ? 1 : Math.min(0.85, 0.3 + galaxyScreenR * 0.1);
+                const labelAlpha = (isHov ? 1 : Math.min(0.85, 0.3 + galaxyScreenR * 0.1)) * galaxyFade;
                 ctx.fillStyle = `rgba(255,255,255,${labelAlpha})`;
                 const fs = Math.max(8, Math.min(200, isHov ? 22/zoom : 16/zoom));
                 ctx.font = `${isHov ? 'bold ' : '600 '}${fs}px Inter,sans-serif`;
                 ctx.textAlign = 'center';
                 ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 5;
                 ctx.fillText(g.name, g.x, g.y - Math.max(g.r/2.5, 20/zoom));
-                // Subtitle with type
                 ctx.font = `${fs*0.55}px Inter,sans-serif`;
                 ctx.fillStyle = `rgba(180,200,255,${labelAlpha * 0.7})`;
                 ctx.fillText(`${g.type} • ${g.dist}`, g.x, g.y - Math.max(g.r/2.5, 20/zoom) + fs*1.1);
                 ctx.shadowBlur = 0;
             }
 
-            // Draw Clusters — visible glowing regions
+            // Draw Clusters
             if (zoom < 0.001) {
                 for(const cl of CLUSTERS) {
-                    // Soft glowing fill for cluster region
                     const clGrad = ctx.createRadialGradient(cl.x, cl.y, cl.r * 0.1, cl.x, cl.y, cl.r);
                     clGrad.addColorStop(0, 'rgba(100, 120, 255, 0.08)');
                     clGrad.addColorStop(0.5, 'rgba(80, 100, 220, 0.04)');
                     clGrad.addColorStop(1, 'transparent');
                     ctx.fillStyle = clGrad;
                     ctx.beginPath(); ctx.arc(cl.x, cl.y, cl.r, 0, Math.PI*2); ctx.fill();
-
-                    // Dashed border — properly scaled
                     const dashLen = Math.max(10000, cl.r * 0.03);
                     ctx.strokeStyle = 'rgba(150, 170, 255, 0.2)';
                     ctx.lineWidth = Math.max(500, 3/zoom);
                     ctx.setLineDash([dashLen, dashLen]);
                     ctx.beginPath(); ctx.arc(cl.x, cl.y, cl.r, 0, Math.PI*2); ctx.stroke();
                     ctx.setLineDash([]);
-
-                    // Cluster label
                     ctx.fillStyle = 'rgba(180,200,255,0.6)';
                     const clFs = Math.max(10, Math.min(500, 25/zoom));
                     ctx.font = `bold ${clFs}px Inter,sans-serif`;
@@ -731,9 +749,8 @@
                     ctx.fillText('Galaxy Cluster', cl.x, cl.y - cl.r * 0.85 + clFs * 1.2);
                     ctx.shadowBlur = 0;
                 }
-                // Supercluster — large-scale structure
+                // Supercluster
                 if(zoom < 0.0001) {
-                    // Draw filament connections between clusters
                     ctx.strokeStyle = 'rgba(120,140,255,0.08)';
                     ctx.lineWidth = Math.max(5000, 5/zoom);
                     ctx.beginPath();
@@ -741,16 +758,12 @@
                     ctx.lineTo(CLUSTERS[1].x, CLUSTERS[1].y);
                     ctx.lineTo(CLUSTERS[2].x, CLUSTERS[2].y);
                     ctx.stroke();
-
-                    // Supercluster halo
                     const scGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 12000000);
                     scGrad.addColorStop(0, 'rgba(100,120,255,0.03)');
                     scGrad.addColorStop(0.7, 'rgba(80,100,200,0.01)');
                     scGrad.addColorStop(1, 'transparent');
                     ctx.fillStyle = scGrad;
                     ctx.beginPath(); ctx.arc(0, 0, 12000000, 0, Math.PI*2); ctx.fill();
-
-                    // Supercluster label
                     const scFs = Math.max(20, 60/zoom);
                     ctx.fillStyle = 'rgba(200,220,255,0.35)';
                     ctx.font = `300 ${scFs}px Inter,sans-serif`;
@@ -794,12 +807,10 @@
             ctx.globalCompositeOperation = 'source-over';
         }
 
-        // ─── 4. CONSTELLATIONS — Elegant Adaptive Display ───
+        // ─── 4. CONSTELLATIONS ───
         if(zoom > 0.003 && zoom < 3) {
             for(const c of CONSTELLATIONS) {
                 if(c.cx < vl - 5000 || c.cx > vr + 5000 || c.cy < vt - 5000 || c.cy > vb + 5000) continue;
-
-                // Connection lines — subtle, elegant
                 const lineAlpha = Math.min(0.35, zoom * 5);
                 ctx.strokeStyle = `rgba(100,150,255,${lineAlpha})`;
                 ctx.lineWidth = Math.max(0.5, 2 / zoom);
@@ -810,55 +821,39 @@
                     ctx.lineTo(c.stars[b].x, c.stars[b].y);
                 }
                 ctx.stroke();
-
-                // Stars with glow
                 for(const s of c.stars) {
                     const isHovered = hoveredObj && hoveredObj.name === s.name;
                     const baseR = s.s / Math.max(0.3, Math.sqrt(zoom));
                     const r = baseR + (isHovered ? 4/Math.sqrt(zoom) : 0);
-                    
-                    // Outer glow
                     ctx.shadowBlur = isHovered ? 30/zoom : 15/zoom;
                     ctx.shadowColor = s.color;
                     ctx.fillStyle = s.color;
                     ctx.beginPath(); ctx.arc(s.x, s.y, r, 0, Math.PI*2); ctx.fill();
                     ctx.shadowBlur = 0;
-
-                    // Star name — elegant adaptive sizing
                     if(zoom > 0.008) {
                         const nameAlpha = Math.min(1, (zoom - 0.008) * 50);
                         ctx.fillStyle = isHovered ? '#fff' : `rgba(255,255,255,${nameAlpha * 0.7})`;
                         let fs = Math.max(8, Math.min(60, 14/zoom));
                         ctx.font = `${isHovered ? 'bold ' : ''}${fs}px Inter,sans-serif`;
                         ctx.textAlign = 'left';
-                        
-                        ctx.shadowColor = 'rgba(0,0,0,0.8)';
-                        ctx.shadowBlur = 4;
+                        ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 4;
                         ctx.fillText(s.name, s.x + r + 8/zoom, s.y + 5/zoom);
                         ctx.shadowBlur = 0;
-                        
-                        // Extra info on hover
                         if(isHovered && zoom > 0.015) {
                             ctx.fillStyle = 'rgba(180,200,255,0.85)';
                             ctx.font = `${fs * 0.65}px Inter,sans-serif`;
                             ctx.fillText(`${s.type} • Mag ${s.mag}`, s.x + r + 8/zoom, s.y + 5/zoom + fs*1.1);
-                            if(s.dist) {
-                                ctx.fillText(`Distance: ${s.dist}`, s.x + r + 8/zoom, s.y + 5/zoom + fs*2);
-                            }
+                            if(s.dist) ctx.fillText(`Distance: ${s.dist}`, s.x + r + 8/zoom, s.y + 5/zoom + fs*2);
                         }
                     }
                 }
-
-                // Constellation name — large, fading watermark style
                 if(zoom > 0.005 && zoom < 0.5) {
                     const nameAlpha = Math.min(0.35, zoom * 4) * Math.max(0, 1 - zoom * 3);
                     ctx.fillStyle = `rgba(200,210,255,${nameAlpha})`;
                     const fs = 60/zoom;
                     ctx.font = `300 ${fs}px Inter,sans-serif`;
                     ctx.textAlign = 'center';
-                    ctx.letterSpacing = `${fs*0.15}px`;
                     ctx.fillText(c.name.toUpperCase(), c.cx, c.cy - 1200);
-                    ctx.letterSpacing = '0px';
                 }
             }
         }
@@ -870,12 +865,10 @@
                     if(s.planets <= 0) continue;
                     const dd = Math.hypot(cx - s.x, cy - s.y);
                     if(dd > 400/zoom) continue;
-
                     const sg = ctx.createRadialGradient(s.x, s.y, 2, s.x, s.y, 15);
                     sg.addColorStop(0, '#fff'); sg.addColorStop(0.5, s.color); sg.addColorStop(1, 'transparent');
                     ctx.fillStyle = sg;
                     ctx.beginPath(); ctx.arc(s.x, s.y, 15, 0, Math.PI*2); ctx.fill();
-
                     const exos = genExoSystem(s);
                     for(const ep of exos) {
                         ep.a -= ep.v * 0.5;
@@ -888,7 +881,6 @@
                         const isHovered = hoveredObj && hoveredObj.name === ep.name;
                         const psize = isHovered ? ep.s*1.5 : ep.s;
                         ctx.beginPath(); ctx.arc(px, py, psize, 0, Math.PI*2); ctx.fill();
-                        
                         if(zoom > 10) {
                             ctx.fillStyle = isHovered ? '#fff' : '#aaa';
                             ctx.font = `${isHovered ? 1.5 : 1}px Inter`;
@@ -896,7 +888,6 @@
                             ctx.fillText(ep.name, px + psize + 1, py + 0.5);
                         }
                     }
-
                     ctx.fillStyle = '#fff';
                     ctx.font = `3px Inter,sans-serif`;
                     ctx.textAlign = 'center';
@@ -910,13 +901,10 @@
             ctx.strokeStyle = 'rgba(255,255,255,0.05)';
             ctx.lineWidth = 1/zoom;
             for(const p of planets) { ctx.beginPath(); ctx.arc(0,0,p.d,0,Math.PI*2); ctx.stroke(); }
-
-            // Sun body
             const rg = ctx.createRadialGradient(0,0,sun.r*0.1,0,0,sun.r*2);
             rg.addColorStop(0,'#fff'); rg.addColorStop(0.5,sun.color); rg.addColorStop(1,'transparent');
             ctx.fillStyle = rg;
             ctx.beginPath(); ctx.arc(0,0,sun.r*2,0,Math.PI*2); ctx.fill();
-
             if(zoom > 0.3) {
                 const hovSun = hoveredObj && hoveredObj.name === 'Sun';
                 ctx.fillStyle = hovSun ? '#fff' : '#ccc';
@@ -924,14 +912,11 @@
                 ctx.textAlign = 'center';
                 ctx.fillText('Sun', 0, -sun.r*2 - 10/zoom);
             }
-
             for(const p of planets) {
                 p.a -= p.v;
                 const px = Math.cos(p.a)*p.d, py = Math.sin(p.a)*p.d;
                 ctx.save(); ctx.translate(px,py);
-                
                 const isHoveredP = hoveredObj && hoveredObj.name === p.name;
-
                 if(p.hasRings) {
                     ctx.strokeStyle='rgba(200,200,180,0.5)'; ctx.lineWidth=4/zoom;
                     ctx.beginPath(); ctx.ellipse(0,0,p.s+18,p.s+6,Math.PI/4,0,Math.PI*2); ctx.stroke();
@@ -939,28 +924,27 @@
                 ctx.fillStyle = p.c;
                 ctx.beginPath(); ctx.arc(0,0,isHoveredP ? p.s*1.2 : p.s,0,Math.PI*2); ctx.fill();
                 
-                // Draw Moons
+                // Draw Moons — show labels at zoom > 1 (was > 8)
                 if(zoom > 0.5 && p.moons && p.moons.length > 0) {
                     ctx.strokeStyle = 'rgba(255,255,255,0.15)';
                     ctx.lineWidth = 0.3/zoom;
                     for(const m of p.moons) {
                         m.a -= m.v;
                         const mmx = Math.cos(m.a)*m.d, mmy = Math.sin(m.a)*m.d;
-                        ctx.beginPath(); ctx.arc(0,0,m.d,0,Math.PI*2); ctx.stroke(); // Orbit ring
-                        
+                        ctx.beginPath(); ctx.arc(0,0,m.d,0,Math.PI*2); ctx.stroke();
                         const hoverM = hoveredObj && hoveredObj.name === m.name;
                         ctx.fillStyle = m.c;
                         ctx.beginPath(); ctx.arc(mmx, mmy, hoverM ? m.s*1.5 : m.s, 0, Math.PI*2); ctx.fill();
                         
-                        if(zoom > 8) {
-                            ctx.fillStyle = hoverM ? '#fff' : 'rgba(200,200,200,0.6)';
-                            ctx.font = `${hoverM ? 1.8 : 1.2}px Inter`;
+                        // Moon names visible at zoom > 1 (was > 8)
+                        if(zoom > 1) {
+                            ctx.fillStyle = hoverM ? '#fff' : 'rgba(200,200,200,0.7)';
+                            ctx.font = `${hoverM ? 1.8/Math.min(zoom/5,1) : 1.2/Math.min(zoom/5,1)}px Inter`;
                             ctx.textAlign = 'left';
                             ctx.fillText(m.name, mmx + m.s + 1, mmy);
                         }
                     }
                 }
-
                 if(zoom > 0.5) {
                     ctx.fillStyle= isHoveredP ? '#fff' : 'rgba(255,255,255,0.7)'; 
                     ctx.font=`${isHoveredP ? 16/zoom : 14/zoom}px Inter`; 
@@ -968,9 +952,7 @@
                     ctx.shadowColor='#000'; ctx.shadowBlur=3;
                     ctx.fillText(p.name, 0, -p.s - 15/zoom);
                     ctx.shadowBlur=0;
-                    
-                    // Moon count badge
-                    if(p.moons.length > 0 && zoom > 1 && zoom < 10) {
+                    if(p.moons.length > 0 && zoom > 0.8 && zoom < 5) {
                         ctx.fillStyle = 'rgba(180,200,255,0.5)';
                         ctx.font = `${10/zoom}px Inter`;
                         ctx.fillText(`${p.moons.length} moons`, 0, p.s + 20/zoom);
