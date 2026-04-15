@@ -27,6 +27,7 @@
         <div style="position:fixed;top:70px;left:15px;background:rgba(0,0,0,0.75);padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);z-index:10;backdrop-filter:blur(10px);">
             <p style="margin:0 0 8px;color:#fff;font-weight:700;font-size:14px;">🔭 Space Explorer</p>
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <button id="z00" class="btn btn-secondary btn-sm" style="border-color: #8b5cf6;">Cosmic Web</button>
                 <button id="z0" class="btn btn-secondary btn-sm">Supercluster</button>
                 <button id="z1" class="btn btn-secondary btn-sm">Milky Way</button>
                 <button id="z2" class="btn btn-secondary btn-sm">Constellations</button>
@@ -46,6 +47,7 @@
         </div>`;
     document.body.appendChild(ctrl);
 
+    $('#z00').onclick = () => { zoomTarget = 0.00000002; cxTarget = 0; cyTarget = 0; };
     $('#z0').onclick = () => { zoomTarget = 0.000003; cxTarget=0; cyTarget=0; };
     $('#z1').onclick = () => { zoomTarget = 0.0008; cxTarget=-100000; cyTarget=50000; };
     $('#z2').onclick = () => { zoomTarget = 0.03; cxTarget=0; cyTarget=0; };
@@ -723,8 +725,50 @@
                 ctx.shadowBlur = 0;
             }
 
-            // Draw Clusters
             if (zoom < 0.001) {
+                // Background dark matter filaments (Cosmic Web)
+                if (zoom < 0.00001) {
+                    const webAlpha = Math.min(0.3, (0.00001 - zoom) / 0.000005);
+                    ctx.strokeStyle = `rgba(100, 50, 200, ${webAlpha})`;
+                    ctx.lineWidth = 100000;
+                    ctx.beginPath();
+                    
+                    // Procedural interconnected web lines
+                    for(let i=0; i<CLUSTERS.length; i++) {
+                        for(let j=i+1; j<CLUSTERS.length; j++) {
+                            const c1 = CLUSTERS[i];
+                            const c2 = CLUSTERS[j];
+                            const dist = Math.hypot(c1.x - c2.x, c1.y - c2.y);
+                            if(dist < 5e6) { // Draw filament if close enough
+                                ctx.moveTo(c1.x, c1.y);
+                                
+                                // Bezier curve for organic dark matter strand
+                                const midX = (c1.x + c2.x) / 2 + (c1.y - c2.y) * 0.2;
+                                const midY = (c1.y + c2.y) / 2 + (c2.x - c1.x) * 0.2;
+                                ctx.quadraticCurveTo(midX, midY, c2.x, c2.y);
+                            }
+                        }
+                    }
+                    ctx.stroke();
+
+                    // Glow effect for filaments
+                    ctx.strokeStyle = `rgba(150, 100, 255, ${webAlpha * 0.5})`;
+                    ctx.lineWidth = 300000;
+                    ctx.stroke();
+                    
+                    // Supercluster Label
+                    if (zoom < 0.000002) {
+                        ctx.fillStyle = `rgba(200, 150, 255, ${webAlpha * 0.8})`;
+                        const scFs = Math.max(10, Math.min(2000, 40/zoom));
+                        ctx.font = `900 ${scFs}px Inter,sans-serif`;
+                        ctx.textAlign = 'center';
+                        ctx.fillText("LANIAKEA SUPERCLUSTER", 0, -3e6);
+                        ctx.font = `600 ${scFs/2}px Inter,sans-serif`;
+                        ctx.fillStyle = `rgba(180, 120, 255, ${webAlpha * 0.5})`;
+                        ctx.fillText("Cosmic Web / Dark Matter Filaments", 0, -3e6 + scFs * 1.5);
+                    }
+                }
+
                 for(const cl of CLUSTERS) {
                     const clGrad = ctx.createRadialGradient(cl.x, cl.y, cl.r * 0.1, cl.x, cl.y, cl.r);
                     clGrad.addColorStop(0, 'rgba(100, 120, 255, 0.08)');
