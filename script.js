@@ -33,6 +33,14 @@
                 <button id="z2" class="btn btn-secondary btn-sm">Constellations</button>
                 <button id="z3" class="btn btn-secondary btn-sm">Solar System</button>
             </div>
+            <div style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;">
+                <label style="color:#bbb;font-size:11px;display:block;margin-bottom:4px;">⏱ Time Speed: <span id="timeSpeedVal">1×</span></label>
+                <input type="range" id="timeSpeedSlider" min="-5" max="10" step="0.5" value="1" style="width:100%;accent-color:#8b5cf6;">
+                <div style="display:flex;gap:8px;margin-top:6px;">
+                    <label style="color:#aaa;font-size:11px;cursor:pointer;"><input type="checkbox" id="showAsteroidBelt" checked style="accent-color:#8b5cf6;"> Asteroid Belt</label>
+                    <label style="color:#aaa;font-size:11px;cursor:pointer;"><input type="checkbox" id="distScaleToggle"> True Scale</label>
+                </div>
+            </div>
             <p id="zoomInfo" style="margin:8px 0 0;font-size:11px;color:#888;">Scroll to zoom • Drag to pan</p>
         </div>
         <div id="infoPanel" class="info-panel" style="position:fixed;top:70px;right:-400px;transition:right 0.3s;z-index:10;background:rgba(15,15,26,0.85);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.15);padding:24px;border-radius:12px;color:#fff;width:300px;box-shadow:0 10px 40px rgba(0,0,0,0.5);">
@@ -499,12 +507,38 @@
     }
 
     let time = 0;
+    let timeSpeed = 1;
+    let showAsteroids = true;
+    let trueScale = false;
+
+    // Generate asteroid belt (cached)
+    const asteroids = [];
+    {
+        let aseed = 42;
+        const arng = () => { aseed=(aseed*16807)%2147483647; return(aseed-1)/2147483646; };
+        for(let i=0; i<400; i++) {
+            const d = 300 + arng() * 130; // Between Mars (250) and Jupiter (450)
+            asteroids.push({ a: arng()*Math.PI*2, d, s: arng()*1.5+0.3, v: 0.003+arng()*0.002, b: arng()*0.5+0.3 });
+        }
+    }
+
+    // Control bindings
+    const timeSlider = $('#timeSpeedSlider');
+    const timeLabel = $('#timeSpeedVal');
+    if(timeSlider) timeSlider.addEventListener('input', e => {
+        timeSpeed = parseFloat(e.target.value);
+        if(timeLabel) timeLabel.textContent = (timeSpeed >= 0 ? '' : '') + timeSpeed + '×';
+    });
+    const astToggle = $('#showAsteroidBelt');
+    if(astToggle) astToggle.addEventListener('change', e => showAsteroids = e.target.checked);
+    const scaleToggle = $('#distScaleToggle');
+    if(scaleToggle) scaleToggle.addEventListener('change', e => trueScale = e.target.checked);
 
     function draw() {
         const w = canvas.width, h = canvas.height;
         ctx.fillStyle = '#020208';
         ctx.fillRect(0, 0, w, h);
-        time++;
+        time += timeSpeed;
 
         // Logarithmic zoom interpolation and smooth camera
         zoom = Math.exp(Math.log(zoom) + (Math.log(zoomTarget) - Math.log(zoom)) * 0.04);
@@ -915,7 +949,7 @@
                     ctx.beginPath(); ctx.arc(s.x, s.y, 15, 0, Math.PI*2); ctx.fill();
                     const exos = genExoSystem(s);
                     for(const ep of exos) {
-                        ep.a -= ep.v * 0.5;
+                        ep.a -= ep.v * 0.5 * timeSpeed;
                         ctx.strokeStyle = 'rgba(255,255,255,0.15)';
                         ctx.lineWidth = 0.5/zoom;
                         ctx.beginPath(); ctx.arc(s.x, s.y, ep.d, 0, Math.PI*2); ctx.stroke();
@@ -945,6 +979,24 @@
             ctx.strokeStyle = 'rgba(255,255,255,0.05)';
             ctx.lineWidth = 1/zoom;
             for(const p of planets) { ctx.beginPath(); ctx.arc(0,0,p.d,0,Math.PI*2); ctx.stroke(); }
+
+            // Asteroid Belt
+            if(showAsteroids && zoom > 0.2) {
+                ctx.fillStyle = 'rgba(180,170,150,0.5)';
+                for(const a of asteroids) {
+                    a.a -= a.v * timeSpeed;
+                    const ax = Math.cos(a.a)*a.d, ay = Math.sin(a.a)*a.d;
+                    ctx.globalAlpha = a.b;
+                    ctx.fillRect(ax - a.s/2, ay - a.s/2, a.s, a.s);
+                }
+                ctx.globalAlpha = 1;
+                if(zoom > 0.5 && zoom < 3) {
+                    ctx.fillStyle = 'rgba(180,170,150,0.25)';
+                    ctx.font = `${9/zoom}px Inter`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('ASTEROID BELT', 350, 0);
+                }
+            }
             const rg = ctx.createRadialGradient(0,0,sun.r*0.1,0,0,sun.r*2);
             rg.addColorStop(0,'#fff'); rg.addColorStop(0.5,sun.color); rg.addColorStop(1,'transparent');
             ctx.fillStyle = rg;
@@ -957,7 +1009,7 @@
                 ctx.fillText('Sun', 0, -sun.r*2 - 10/zoom);
             }
             for(const p of planets) {
-                p.a -= p.v;
+                p.a -= p.v * timeSpeed;
                 const px = Math.cos(p.a)*p.d, py = Math.sin(p.a)*p.d;
                 ctx.save(); ctx.translate(px,py);
                 const isHoveredP = hoveredObj && hoveredObj.name === p.name;
