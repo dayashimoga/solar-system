@@ -51,7 +51,10 @@
                 <div><div style="font-size:0.7rem;color:#888;text-transform:uppercase;">Planets</div><div id="ipPlanets" style="font-weight:600;">0</div></div>
                 <div><div style="font-size:0.7rem;color:#888;text-transform:uppercase;">Distance</div><div id="ipDist" style="font-weight:600;">Unknown</div></div>
             </div>
-            <button id="ipClose" class="btn btn-primary" style="margin-top:20px;width:100%;">Close Panel</button>
+            <div style="display:flex;gap:10px;margin-top:20px;">
+                <button id="ipClose" class="btn btn-secondary" style="flex:1;">Close</button>
+                <button id="btnLandRover" class="btn btn-primary hidden" style="flex:1;background:linear-gradient(135deg, #f97316, #ea580c);">Land Rover (3D)</button>
+            </div>
         </div>`;
     document.body.appendChild(ctrl);
 
@@ -248,14 +251,14 @@
     // ═══════════════════════════════════════════════════════
     const sun = { r: 50, color: '#facc15', glow: '#fef08a' };
     const planets = [
-        { name:'Mercury', d:80, s:3, c:'#a8a29e', v:0.04, a:0, moons:[] },
-        { name:'Venus', d:130, s:6, c:'#fcd34d', v:0.015, a:1, moons:[] },
-        { name:'Earth', d:190, s:7, c:'#3b82f6', v:0.01, a:2, moons:[{name:'Moon', d:14, s:1.5, c:'#ddd', v:0.04, a:0}] },
-        { name:'Mars', d:250, s:5, c:'#ef4444', v:0.008, a:-1, moons:[
+        { name:'Mercury', d:80, e:0.2056, s:3, c:'#a8a29e', v:0.04, a:0, moons:[] },
+        { name:'Venus', d:130, e:0.0067, s:6, c:'#fcd34d', v:0.015, a:1, moons:[] },
+        { name:'Earth', d:190, e:0.0167, s:7, c:'#3b82f6', v:0.01, a:2, moons:[{name:'Moon', d:14, s:1.5, c:'#ddd', v:0.04, a:0}] },
+        { name:'Mars', d:250, e:0.0934, s:5, c:'#ef4444', v:0.008, a:-1, moons:[
             {name:'Phobos', d:9, s:0.8, c:'#aaa', v:0.06, a:0},
             {name:'Deimos', d:16, s:0.6, c:'#999', v:0.03, a:2}
         ]},
-        { name:'Jupiter', d:450, s:22, c:'#fdba74', v:0.002, a:3, bands:true, moons:[
+        { name:'Jupiter', d:450, e:0.0489, s:22, c:'#fdba74', v:0.002, a:3, bands:true, moons:[
             {name:'Io', d:32, s:2, c:'#ffeb3b', v:0.02, a:0},
             {name:'Europa', d:45, s:1.8, c:'#e0e8ff', v:0.015, a:1},
             {name:'Ganymede', d:65, s:2.5, c:'#ccc', v:0.01, a:2},
@@ -265,7 +268,7 @@
             {name:'Himalia', d:110, s:1.0, c:'#997', v:0.004, a:0.5},
             {name:'Elara', d:120, s:0.7, c:'#887', v:0.003, a:1.5}
         ]},
-        { name:'Saturn', d:650, s:18, c:'#fde047', v:0.001, a:5, hasRings:true, moons:[
+        { name:'Saturn', d:650, e:0.0565, s:18, c:'#fde047', v:0.001, a:5, hasRings:true, moons:[
             {name:'Titan', d:48, s:3, c:'#ffb74d', v:0.012, a:0},
             {name:'Enceladus', d:30, s:1, c:'#fff', v:0.03, a:1},
             {name:'Mimas', d:25, s:0.8, c:'#bbb', v:0.04, a:2},
@@ -275,7 +278,7 @@
             {name:'Tethys', d:33, s:1.1, c:'#dde', v:0.022, a:0.7},
             {name:'Hyperion', d:55, s:0.9, c:'#aa8', v:0.01, a:1.2}
         ]},
-        { name:'Uranus', d:850, s:14, c:'#67e8f9', v:0.0005, a:0, moons:[
+        { name:'Uranus', d:850, e:0.0463, s:14, c:'#67e8f9', v:0.0005, a:0, moons:[
             {name:'Titania', d:25, s:1.5, c:'#ccc', v:0.015, a:0},
             {name:'Oberon', d:32, s:1.4, c:'#bbb', v:0.01, a:1},
             {name:'Umbriel', d:18, s:1.2, c:'#999', v:0.02, a:2},
@@ -284,14 +287,14 @@
             {name:'Puck', d:12, s:0.6, c:'#aab', v:0.04, a:5},
             {name:'Cordelia', d:10, s:0.4, c:'#bbc', v:0.05, a:0.3}
         ]},
-        { name:'Neptune', d:1050, s:13, c:'#3b82f6', v:0.0004, a:Math.PI, moons:[
+        { name:'Neptune', d:1050, e:0.0086, s:13, c:'#3b82f6', v:0.0004, a:Math.PI, moons:[
             {name:'Triton', d:25, s:2, c:'#b3e5fc', v:-0.015, a:0},
             {name:'Proteus', d:18, s:1.2, c:'#aaa', v:0.02, a:1},
             {name:'Nereid', d:40, s:0.8, c:'#888', v:0.008, a:2},
             {name:'Larissa', d:14, s:0.7, c:'#99b', v:0.03, a:3},
             {name:'Galatea', d:12, s:0.5, c:'#aac', v:0.035, a:4}
         ]},
-        { name:'Pluto', d:1250, s:2.5, c:'#ddc', v:0.0002, a:4, moons:[
+        { name:'Pluto', d:1250, e:0.2488, s:2.5, c:'#ddc', v:0.0002, a:4, moons:[
             {name:'Charon', d:8, s:1.2, c:'#ccc', v:0.05, a:0},
             {name:'Nix', d:14, s:0.5, c:'#bba', v:0.02, a:1.5},
             {name:'Hydra', d:18, s:0.5, c:'#aab', v:0.015, a:3}
@@ -406,6 +409,16 @@
             $('#ipMag').textContent = selectedObj.mag !== undefined ? selectedObj.mag : 'N/A';
             $('#ipPlanets').textContent = selectedObj.planets !== undefined ? selectedObj.planets : 'N/A';
             $('#ipDist').textContent = selectedObj.dist || (Math.round(Math.hypot(selectedObj.x, selectedObj.y)/10) + ' ly');
+            
+            const btnLand = $('#btnLandRover');
+            if(selectedObj.type === 'Solar System Planet' && ['Mars', 'Moon'].includes(selectedObj.name)) {
+                btnLand.classList.remove('hidden');
+                btnLand.style.display = 'block';
+                btnLand.onclick = () => launchRoverSimulator(selectedObj.name);
+            } else {
+                btnLand.style.display = 'none';
+            }
+
             $('#infoPanel').style.right = '15px';
         } else {
             $('#infoPanel').style.right = '-400px';
@@ -443,8 +456,9 @@
                     hoveredObj = {name:'Sun', x:0, y:0, type:'G-Type Main Sequence', emoji:'☀️', targetZoom: 1.5, mag: -26.74, planets: 8, dist: '0 ly'};
                 } else {
                     for(const p of planets) {
-                        const px = Math.cos(p.a)*p.d;
-                        const py = Math.sin(p.a)*p.d;
+                        const r = p.d * (1 - p.e * p.e) / (1 + p.e * Math.cos(p.a));
+                        const px = Math.cos(p.a) * r;
+                        const py = Math.sin(p.a) * r;
                         if(Math.hypot(mx - px, my - py) < Math.max(p.s*2, 20/zoom)) {
                             hoveredObj = {...p, x:px, y:py, emoji:'🪐', type:'Solar System Planet', mag:'N/A', planets: p.moons.length + ' moons', targetZoom: 25, dist: p.d + ' Mkm'};
                             break;
@@ -978,7 +992,16 @@
         if(zoom > 0.05 && cx > -10000 && cx < 10000) {
             ctx.strokeStyle = 'rgba(255,255,255,0.05)';
             ctx.lineWidth = 1/zoom;
-            for(const p of planets) { ctx.beginPath(); ctx.arc(0,0,p.d,0,Math.PI*2); ctx.stroke(); }
+            for(const p of planets) { 
+                ctx.beginPath(); 
+                for(let angle = 0; angle <= Math.PI*2; angle += 0.05) {
+                    const r = p.d * (1 - p.e * p.e) / (1 + p.e * Math.cos(angle));
+                    if(angle === 0) ctx.moveTo(Math.cos(angle)*r, Math.sin(angle)*r);
+                    else ctx.lineTo(Math.cos(angle)*r, Math.sin(angle)*r);
+                }
+                ctx.closePath();
+                ctx.stroke(); 
+            }
 
             // Asteroid Belt
             if(showAsteroids && zoom > 0.2) {
@@ -1009,8 +1032,14 @@
                 ctx.fillText('Sun', 0, -sun.r*2 - 10/zoom);
             }
             for(const p of planets) {
-                p.a -= p.v * timeSpeed;
-                const px = Math.cos(p.a)*p.d, py = Math.sin(p.a)*p.d;
+                // Kepler's Second Law approximation: angular velocity depends inversely on distance squared
+                const r = p.d * (1 - p.e * p.e) / (1 + p.e * Math.cos(p.a));
+                const angularV = (p.v * (p.d * p.d) / (r * r));
+                p.a -= angularV * timeSpeed;
+
+                const px = Math.cos(p.a) * r;
+                const py = Math.sin(p.a) * r;
+                
                 ctx.save(); ctx.translate(px,py);
                 const isHoveredP = hoveredObj && hoveredObj.name === p.name;
                 if(p.hasRings) {
