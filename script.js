@@ -32,6 +32,7 @@
                 <button id="z1" class="btn btn-secondary btn-sm">Milky Way</button>
                 <button id="z2" class="btn btn-secondary btn-sm">Constellations</button>
                 <button id="z3" class="btn btn-secondary btn-sm">Solar System</button>
+                <button id="zBH" class="btn btn-primary btn-sm" style="background:linear-gradient(45deg,#111,#333); border:1px solid #fff; box-shadow: 0 0 10px rgba(255,255,255,0.2);">Sagittarius A* (Black Hole)</button>
             </div>
             <div style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;">
                 <label style="color:#bbb;font-size:11px;display:block;margin-bottom:4px;">⏱ Time Speed: <span id="timeSpeedVal">1×</span></label>
@@ -63,6 +64,7 @@
     $('#z1').onclick = () => { zoomTarget = 0.0008; cxTarget=-100000; cyTarget=50000; };
     $('#z2').onclick = () => { zoomTarget = 0.03; cxTarget=0; cyTarget=0; };
     $('#z3').onclick = () => { zoomTarget = 1.0; cxTarget=0; cyTarget=0; };
+    $('#zBH').onclick = () => { zoomTarget = 0.2; cxTarget=150000; cyTarget=-150000; };
     $('#ipClose').onclick = () => { $('#infoPanel').style.right = '-400px'; selectedObj = null; };
 
     canvas.addEventListener('mousedown', e => { isDragging=true; dragStart={x:e.clientX,y:e.clientY}; camStart={x:cx,y:cy}; });
@@ -888,15 +890,62 @@
             }
         }
 
-        // ─── 3. NEBULA GLOW ───
-        if(zoom > 0.0005 && zoom < 0.05) {
+        // ─── 3. NEBULA & GALAXY GLOW ───
+        if(zoom > 0.0001 && zoom < 0.1) {
             ctx.globalCompositeOperation = 'screen';
-            [[0,0,'rgba(40,10,80,0.3)'],[5000,-3000,'rgba(10,40,80,0.2)'],[-4000,4000,'rgba(80,20,20,0.2)']].forEach(([nx,ny,nc]) => {
-                const g = ctx.createRadialGradient(nx,ny,0,nx,ny,8000);
+            // Brighter, more prominent galaxies
+            [[0,0,'rgba(60,20,120,0.4)'],[5000,-3000,'rgba(20,60,120,0.3)'],[-4000,4000,'rgba(120,30,30,0.3)'],[150000,-150000,'rgba(255,200,100,0.3)']].forEach(([nx,ny,nc]) => {
+                const g = ctx.createRadialGradient(nx,ny,0,nx,ny,12000);
                 g.addColorStop(0, nc); g.addColorStop(1, 'transparent');
-                ctx.fillStyle = g; ctx.fillRect(nx-8000,ny-8000,16000,16000);
+                ctx.fillStyle = g; ctx.fillRect(nx-12000,ny-12000,24000,24000);
             });
             ctx.globalCompositeOperation = 'source-over';
+        }
+        
+        // ─── 3.5. SUPERMASSIVE BLACK HOLE ───
+        // Located far away at 150000, -150000
+        const bhX = 150000, bhY = -150000, bhR = 50;
+        if(zoom > 0.005) {
+            const distToBH = Math.hypot(cx - bhX, cy - bhY);
+            if(distToBH < 5000/zoom) {
+                // Accretion disk
+                ctx.save();
+                ctx.translate(bhX, bhY);
+                ctx.scale(1, 0.3); // Tilted disk
+                const timeStr = Date.now() / 500;
+                ctx.rotate(timeStr * 0.5);
+                const diskGrad = ctx.createRadialGradient(0,0,bhR, 0,0,bhR*4);
+                diskGrad.addColorStop(0, 'rgba(255,255,255,0.9)');
+                diskGrad.addColorStop(0.2, 'rgba(255,150,50,0.8)');
+                diskGrad.addColorStop(0.6, 'rgba(100,20,150,0.4)');
+                diskGrad.addColorStop(1, 'transparent');
+                ctx.fillStyle = diskGrad;
+                ctx.beginPath(); ctx.arc(0,0,bhR*4, 0, Math.PI*2); ctx.fill();
+                ctx.restore();
+                
+                // Event Horizon
+                ctx.fillStyle = '#000';
+                ctx.shadowBlur = 20 * zoom;
+                ctx.shadowColor = '#fff';
+                ctx.beginPath(); ctx.arc(bhX, bhY, bhR, 0, Math.PI*2); ctx.fill();
+                ctx.shadowBlur = 0;
+                
+                // Lensing (simple representation)
+                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                ctx.lineWidth = 2/zoom;
+                ctx.beginPath(); ctx.arc(bhX, bhY, bhR*1.5, 0, Math.PI*2); ctx.stroke();
+                
+                // Label
+                if(zoom > 0.05) {
+                    ctx.fillStyle = '#fff';
+                    ctx.font = `${20/zoom}px Inter`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('Sagittarius A*', bhX, bhY - bhR*2 - 10/zoom);
+                    ctx.fillStyle = '#aaa';
+                    ctx.font = `${12/zoom}px Inter`;
+                    ctx.fillText('Supermassive Black Hole', bhX, bhY - bhR*2 + 10/zoom);
+                }
+            }
         }
 
         // ─── 4. CONSTELLATIONS ───
