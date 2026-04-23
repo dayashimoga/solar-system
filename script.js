@@ -296,10 +296,21 @@
             {name:'Larissa', d:14, s:0.7, c:'#99b', v:0.03, a:3},
             {name:'Galatea', d:12, s:0.5, c:'#aac', v:0.035, a:4}
         ]},
-        { name:'Pluto', d:1250, e:0.2488, s:2.5, c:'#ddc', v:0.0002, a:4, moons:[
+        { name:'Pluto', d:1250, e:0.2488, s:2.5, c:'#ddc', v:0.0002, a:4, isDwarf:true, moons:[
             {name:'Charon', d:8, s:1.2, c:'#ccc', v:0.05, a:0},
             {name:'Nix', d:14, s:0.5, c:'#bba', v:0.02, a:1.5},
             {name:'Hydra', d:18, s:0.5, c:'#aab', v:0.015, a:3}
+        ]},
+        { name:'Ceres', d:340, e:0.0758, s:2, c:'#a8a8a0', v:0.006, a:2.5, isDwarf:true, moons:[] },
+        { name:'Haumea', d:1400, e:0.1912, s:2.2, c:'#e8ddd0', v:0.00018, a:1, isDwarf:true, moons:[
+            {name:'Hi\u02BBiaka', d:10, s:0.5, c:'#ccc', v:0.03, a:0},
+            {name:'Namaka', d:7, s:0.4, c:'#bbb', v:0.04, a:2}
+        ]},
+        { name:'Makemake', d:1500, e:0.1559, s:2, c:'#e0c8a0', v:0.00015, a:3, isDwarf:true, moons:[
+            {name:'MK2', d:6, s:0.3, c:'#888', v:0.05, a:0}
+        ]},
+        { name:'Eris', d:1700, e:0.4407, s:2.3, c:'#e8e8e8', v:0.0001, a:5.5, isDwarf:true, moons:[
+            {name:'Dysnomia', d:10, s:0.6, c:'#999', v:0.025, a:0}
         ]}
     ];
 
@@ -535,6 +546,17 @@
         for(let i=0; i<400; i++) {
             const d = 300 + arng() * 130; // Between Mars (250) and Jupiter (450)
             asteroids.push({ a: arng()*Math.PI*2, d, s: arng()*1.5+0.3, v: 0.003+arng()*0.002, b: arng()*0.5+0.3 });
+        }
+    }
+
+    // Generate Kuiper Belt (cached)
+    const kuiperBelt = [];
+    {
+        let kseed = 84;
+        const krng = () => { kseed=(kseed*16807)%2147483647; return(kseed-1)/2147483646; };
+        for(let i=0; i<600; i++) {
+            const d = 1100 + krng() * 700; // Beyond Neptune (1050)
+            kuiperBelt.push({ a: krng()*Math.PI*2, d, s: krng()*1.2+0.2, v: 0.0005+krng()*0.001, b: krng()*0.4+0.2 });
         }
     }
 
@@ -1067,6 +1089,40 @@
                     ctx.font = `${9/zoom}px Inter`;
                     ctx.textAlign = 'center';
                     ctx.fillText('ASTEROID BELT', 350, 0);
+                }
+            }
+
+            // Kuiper Belt (beyond Neptune)
+            if(showAsteroids && zoom > 0.1 && zoom < 5) {
+                ctx.fillStyle = 'rgba(120,140,180,0.35)';
+                for(const kb of kuiperBelt) {
+                    kb.a -= kb.v * timeSpeed;
+                    const kx = Math.cos(kb.a)*kb.d, ky = Math.sin(kb.a)*kb.d;
+                    ctx.globalAlpha = kb.b;
+                    ctx.fillRect(kx - kb.s/2, ky - kb.s/2, kb.s, kb.s);
+                }
+                ctx.globalAlpha = 1;
+                if(zoom > 0.2 && zoom < 2) {
+                    ctx.fillStyle = 'rgba(120,140,180,0.2)';
+                    ctx.font = `${9/zoom}px Inter`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('KUIPER BELT', 1450, 0);
+                }
+            }
+
+            // Oort Cloud (outermost faint shell)
+            if(showAsteroids && zoom > 0.02 && zoom < 1) {
+                ctx.strokeStyle = 'rgba(100,120,160,0.08)';
+                ctx.lineWidth = 2/zoom;
+                ctx.setLineDash([10/zoom, 20/zoom]);
+                ctx.beginPath(); ctx.arc(0, 0, 2500, 0, Math.PI*2); ctx.stroke();
+                ctx.beginPath(); ctx.arc(0, 0, 3000, 0, Math.PI*2); ctx.stroke();
+                ctx.setLineDash([]);
+                if(zoom > 0.05 && zoom < 0.5) {
+                    ctx.fillStyle = 'rgba(100,120,160,0.15)';
+                    ctx.font = `${12/zoom}px Inter`;
+                    ctx.textAlign = 'center';
+                    ctx.fillText('OORT CLOUD', 2750, 0);
                 }
             }
             const rg = ctx.createRadialGradient(0,0,sun.r*0.1,0,0,sun.r*2);
