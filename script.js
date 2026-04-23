@@ -21,43 +21,7 @@
     let isDragging = false, dragStart = {x:0,y:0}, camStart = {x:0,y:0};
     const MIN_ZOOM = 0.0000001, MAX_ZOOM = 20000;
 
-    // Controls
-    const ctrl = document.createElement('div');
-    ctrl.innerHTML = `
-        <div style="position:fixed;top:70px;left:15px;background:rgba(0,0,0,0.75);padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);z-index:10;backdrop-filter:blur(10px);">
-            <p style="margin:0 0 8px;color:#fff;font-weight:700;font-size:14px;">🔭 Space Explorer</p>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                <button id="z00" class="btn btn-secondary btn-sm" style="border-color: #8b5cf6;">Cosmic Web</button>
-                <button id="z0" class="btn btn-secondary btn-sm">Supercluster</button>
-                <button id="z1" class="btn btn-secondary btn-sm">Milky Way</button>
-                <button id="z2" class="btn btn-secondary btn-sm">Constellations</button>
-                <button id="z3" class="btn btn-secondary btn-sm">Solar System</button>
-                <button id="zBH" class="btn btn-primary btn-sm" style="background:linear-gradient(45deg,#111,#333); border:1px solid #fff; box-shadow: 0 0 10px rgba(255,255,255,0.2);">Sagittarius A* (Black Hole)</button>
-            </div>
-            <div style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.1);padding-top:8px;">
-                <label style="color:#bbb;font-size:11px;display:block;margin-bottom:4px;">⏱ Time Speed: <span id="timeSpeedVal">1×</span></label>
-                <input type="range" id="timeSpeedSlider" min="-5" max="10" step="0.5" value="1" style="width:100%;accent-color:#8b5cf6;">
-                <div style="display:flex;gap:8px;margin-top:6px;">
-                    <label style="color:#aaa;font-size:11px;cursor:pointer;"><input type="checkbox" id="showAsteroidBelt" checked style="accent-color:#8b5cf6;"> Asteroid Belt</label>
-                    <label style="color:#aaa;font-size:11px;cursor:pointer;"><input type="checkbox" id="distScaleToggle"> True Scale</label>
-                </div>
-            </div>
-            <p id="zoomInfo" style="margin:8px 0 0;font-size:11px;color:#888;">Scroll to zoom • Drag to pan</p>
-        </div>
-        <div id="infoPanel" class="info-panel" style="position:fixed;top:70px;right:-400px;transition:right 0.3s;z-index:10;background:rgba(15,15,26,0.85);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.15);padding:24px;border-radius:12px;color:#fff;width:300px;box-shadow:0 10px 40px rgba(0,0,0,0.5);">
-            <h2 id="ipTitle" style="margin:0 0 10px;font-size:1.5rem;display:flex;align-items:center;gap:8px;">Star</h2>
-            <div id="ipType" style="color:#aaccff;font-size:0.9rem;margin-bottom:15px;font-weight:600;">Type</div>
-            <div class="info-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;border-top:1px solid rgba(255,255,255,0.1);padding-top:15px;">
-                <div><div style="font-size:0.7rem;color:#888;text-transform:uppercase;">Magnitude</div><div id="ipMag" style="font-weight:600;">0</div></div>
-                <div><div style="font-size:0.7rem;color:#888;text-transform:uppercase;">Planets</div><div id="ipPlanets" style="font-weight:600;">0</div></div>
-                <div><div style="font-size:0.7rem;color:#888;text-transform:uppercase;">Distance</div><div id="ipDist" style="font-weight:600;">Unknown</div></div>
-            </div>
-            <div style="display:flex;gap:10px;margin-top:20px;">
-                <button id="ipClose" class="btn btn-secondary" style="flex:1;">Close</button>
-                <button id="btnLandRover" class="btn btn-primary hidden" style="flex:1;background:linear-gradient(135deg, #f97316, #ea580c);">Land Rover (3D)</button>
-            </div>
-        </div>`;
-    document.body.appendChild(ctrl);
+    // Removed dynamic HUD creation in favor of index.html mainHUD
 
     $('#z00').onclick = () => { zoomTarget = 0.00000002; cxTarget = 0; cyTarget = 0; };
     $('#z0').onclick = () => { zoomTarget = 0.000003; cxTarget=0; cyTarget=0; };
@@ -65,7 +29,7 @@
     $('#z2').onclick = () => { zoomTarget = 0.03; cxTarget=0; cyTarget=0; };
     $('#z3').onclick = () => { zoomTarget = 1.0; cxTarget=0; cyTarget=0; };
     $('#zBH').onclick = () => { zoomTarget = 0.2; cxTarget=150000; cyTarget=-150000; };
-    $('#ipClose').onclick = () => { $('#infoPanel').style.right = '-400px'; selectedObj = null; };
+    $('#ipClose').onclick = () => { $('#infoPanel').style.left = '-400px'; selectedObj = null; };
 
     canvas.addEventListener('mousedown', e => { isDragging=true; dragStart={x:e.clientX,y:e.clientY}; camStart={x:cx,y:cy}; });
     window.addEventListener('mouseup', () => isDragging=false);
@@ -432,9 +396,9 @@
                 btnLand.style.display = 'none';
             }
 
-            $('#infoPanel').style.right = '15px';
+            $('#infoPanel').style.left = '20px';
         } else {
-            $('#infoPanel').style.right = '-400px';
+            $('#infoPanel').style.left = '-400px';
             selectedObj = null;
         }
     });
@@ -537,6 +501,7 @@
     let timeSpeed = 1;
     let showAsteroids = true;
     let trueScale = false;
+    let showOrbitTrails = true;
 
     // Generate asteroid belt (cached)
     const asteroids = [];
@@ -569,6 +534,8 @@
     });
     const astToggle = $('#showAsteroidBelt');
     if(astToggle) astToggle.addEventListener('change', e => showAsteroids = e.target.checked);
+    const orbitToggle = $('#showOrbitTrails');
+    if(orbitToggle) orbitToggle.addEventListener('change', e => showOrbitTrails = e.target.checked);
     const scaleToggle = $('#distScaleToggle');
     if(scaleToggle) scaleToggle.addEventListener('change', e => trueScale = e.target.checked);
 
@@ -1035,9 +1002,11 @@
                     const exos = genExoSystem(s);
                     for(const ep of exos) {
                         ep.a -= ep.v * 0.5 * timeSpeed;
-                        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-                        ctx.lineWidth = 0.5/zoom;
-                        ctx.beginPath(); ctx.arc(s.x, s.y, ep.d, 0, Math.PI*2); ctx.stroke();
+                        if(showOrbitTrails) {
+                            ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+                            ctx.lineWidth = 0.5/zoom;
+                            ctx.beginPath(); ctx.arc(s.x, s.y, ep.d, 0, Math.PI*2); ctx.stroke();
+                        }
                         const px = s.x + Math.cos(ep.a) * ep.d;
                         const py = s.y + Math.sin(ep.a) * ep.d;
                         ctx.fillStyle = ep.c;
@@ -1061,17 +1030,19 @@
 
         // ─── 6. SOLAR SYSTEM ───
         if(zoom > 0.05 && cx > -10000 && cx < 10000) {
-            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-            ctx.lineWidth = 1/zoom;
-            for(const p of planets) { 
-                ctx.beginPath(); 
-                for(let angle = 0; angle <= Math.PI*2; angle += 0.05) {
-                    const r = p.d * (1 - p.e * p.e) / (1 + p.e * Math.cos(angle));
-                    if(angle === 0) ctx.moveTo(Math.cos(angle)*r, Math.sin(angle)*r);
-                    else ctx.lineTo(Math.cos(angle)*r, Math.sin(angle)*r);
+            if(showOrbitTrails) {
+                ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+                ctx.lineWidth = 1/zoom;
+                for(const p of planets) { 
+                    ctx.beginPath(); 
+                    for(let angle = 0; angle <= Math.PI*2; angle += 0.05) {
+                        const r = p.d * (1 - p.e * p.e) / (1 + p.e * Math.cos(angle));
+                        if(angle === 0) ctx.moveTo(Math.cos(angle)*r, Math.sin(angle)*r);
+                        else ctx.lineTo(Math.cos(angle)*r, Math.sin(angle)*r);
+                    }
+                    ctx.closePath();
+                    ctx.stroke(); 
                 }
-                ctx.closePath();
-                ctx.stroke(); 
             }
 
             // Asteroid Belt
@@ -1161,7 +1132,9 @@
                     for(const m of p.moons) {
                         m.a -= m.v;
                         const mmx = Math.cos(m.a)*m.d, mmy = Math.sin(m.a)*m.d;
-                        ctx.beginPath(); ctx.arc(0,0,m.d,0,Math.PI*2); ctx.stroke();
+                        if(showOrbitTrails) {
+                            ctx.beginPath(); ctx.arc(0,0,m.d,0,Math.PI*2); ctx.stroke();
+                        }
                         const hoverM = hoveredObj && hoveredObj.name === m.name;
                         ctx.fillStyle = m.c;
                         ctx.beginPath(); ctx.arc(mmx, mmy, hoverM ? m.s*1.5 : m.s, 0, Math.PI*2); ctx.fill();
