@@ -1175,6 +1175,32 @@
         requestAnimationFrame(draw);
     }
 
+    const addPlanetBtn = $('#addPlanetBtn');
+    if (addPlanetBtn) {
+        addPlanetBtn.addEventListener('click', () => {
+            const name = prompt('Enter planet name:', 'New Planet');
+            if (!name) return;
+            const dist = parseFloat(prompt('Enter orbit distance (e.g. 500 for between Jupiter and Saturn):', '500'));
+            if (isNaN(dist)) return;
+            const size = parseFloat(prompt('Enter size (1-30):', '8'));
+            if (isNaN(size)) return;
+            const color = prompt('Enter hex color (e.g. #ff00ff):', '#ff00ff');
+            
+            planets.push({
+                name: name,
+                d: dist,
+                e: 0.05, // Slight eccentricity
+                s: Math.min(100, Math.max(1, size)),
+                c: color || '#fff',
+                v: 0.01 / Math.sqrt(dist / 100), // Kepler-ish
+                a: Math.random() * Math.PI * 2,
+                moons: []
+            });
+            
+            if(typeof QU !== 'undefined') QU.showToast(`Added custom planet: ${name}`, 'success');
+        });
+    }
+
     setTimeout(() => { zoomTarget = 0.02; }, 500);
     requestAnimationFrame(draw);
 })();
