@@ -1,5 +1,6 @@
 /* Solar System Explorer - Immersive Deep Zoom */
-'use strict';
+import { searchCatalog, distanceBetween, formatDistance, calcTimeScale, orbitalPeriod, orbitalPosition } from './solar-system-utils.js';
+
 (function(){
     const $ = s => document.querySelector(s);
     if(typeof QU !== 'undefined') QU.init({ kofi: true, discover: true });
@@ -1198,6 +1199,82 @@
             });
             
             if(typeof QU !== 'undefined') QU.showToast(`Added custom planet: ${name}`, 'success');
+        });
+    }
+
+    // --- Search & Distance Logic ---
+    const searchInput = $('#searchInput');
+    const searchResults = $('#searchResults');
+    let measureMode = false;
+    let measurePoints = [];
+
+    if (searchInput && searchResults) {
+        searchInput.addEventListener('input', (e) => {
+            const q = e.target.value.trim();
+            if (q.length < 2) {
+                searchResults.style.display = 'none';
+                return;
+            }
+            const res = searchCatalog(q);
+            if (res.length > 0) {
+                searchResults.innerHTML = res.map(r => 
+                    `<div class="search-item" style="padding:6px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.1);" data-name="${r.name}">
+                        <span style="color:#aaccff;">${r.name}</span> <span style="color:#666;font-size:0.7rem;">(${r.type})</span>
+                    </div>`
+                ).join('');
+                searchResults.style.display = 'block';
+                document.querySelectorAll('.search-item').forEach(el => {
+                    el.addEventListener('click', () => {
+                        const tgt = el.getAttribute('data-name');
+                        searchInput.value = tgt;
+                        searchResults.style.display = 'none';
+                        if(typeof QU !== 'undefined') QU.showToast(`Target acquired: ${tgt}. Zooming is manual in this version.`, 'success');
+                    });
+                });
+            } else {
+                searchResults.innerHTML = '<div style="padding:6px;color:#888;">No results found</div>';
+                searchResults.style.display = 'block';
+            }
+        });
+    }
+
+    const calcDistBtn = $('#calcDistBtn');
+    if (calcDistBtn) {
+        calcDistBtn.addEventListener('click', () => {
+            measureMode = !measureMode;
+            measurePoints = [];
+            calcDistBtn.style.background = measureMode ? 'rgba(239,68,68,0.3)' : 'rgba(139,92,246,0.2)';
+            calcDistBtn.textContent = measureMode ? 'Cancel Measurement' : '📏 Measure Distance';
+            if(typeof QU !== 'undefined' && measureMode) QU.showToast('Click two points on the canvas to measure distance.', 'info');
+        });
+
+        canvas.addEventListener('click', (e) => {
+            if (!measureMode) return;
+            // Map screen coords to world coords
+            const wx = cx + (e.clientX - canvas.width/2)/zoom;
+            const wy = cy + (e.clientY - canvas.height/2)/zoom;
+            measurePoints.push({x: wx, y: wy});
+            if (measurePoints.length === 2) {
+                const dist = distanceBetween(measurePoints[0], measurePoints[1]);
+                const formatted = formatDistance(dist / 100); // Rough scaling factor
+                alert(`Distance: ${formatted}`);
+                measureMode = false;
+                calcDistBtn.style.background = 'rgba(139,92,246,0.2)';
+                calcDistBtn.textContent = '📏 Measure Distance';
+                measurePoints = [];
+            }
+        });
+    }
+
+    // Format the time scale in the UI using calcTimeScale
+    const speedSlider = $('#timeSpeedSlider');
+    const speedVal = $('#timeSpeedVal');
+    if (speedSlider && speedVal) {
+        speedSlider.addEventListener('input', (e) => {
+            const v = parseFloat(e.target.value);
+            let mult = v < 0 ? -Math.pow(2, Math.abs(v)) : Math.pow(2, v);
+            if (v === 0) mult = 0;
+            speedVal.textContent = calcTimeScale(mult);
         });
     }
 
